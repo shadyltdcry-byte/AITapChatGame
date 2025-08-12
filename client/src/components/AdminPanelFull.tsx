@@ -163,10 +163,15 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
     mutationFn: async ({ id, ...character }: any) => {
       return await apiRequest("PUT", `/api/admin/characters/${id}`, character);
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/characters"] });
       toast({ title: "Success", description: "Character updated successfully!" });
-      setEditingCharacter(null);
+      // Update the editing character with the latest data to refresh the images
+      if (data && data.id === editingCharacter?.id) {
+        setEditingCharacter(data);
+      } else {
+        setEditingCharacter(null);
+      }
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to update character", variant: "destructive" });
@@ -970,9 +975,9 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
                   <Label className="text-white text-sm">Current Main Image</Label>
-                  {editingCharacter.imageUrl ? (
+                  {editingCharacter.imageUrl && editingCharacter.imageUrl !== '/default-character.jpg' ? (
                     <img 
-                      src={editingCharacter.imageUrl} 
+                      src={`${editingCharacter.imageUrl}?t=${Date.now()}`} 
                       alt={`${editingCharacter.name} main`}
                       className="w-full h-48 object-cover rounded-lg mt-2"
                       onError={(e) => {
@@ -981,15 +986,15 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
                     />
                   ) : (
                     <div className="w-full h-48 bg-slate-700 rounded-lg flex items-center justify-center mt-2">
-                      <span className="text-slate-400">No main image</span>
+                      <span className="text-slate-400">No main image selected</span>
                     </div>
                   )}
                 </div>
                 <div className="text-center">
                   <Label className="text-white text-sm">Current Avatar</Label>
-                  {editingCharacter.avatarUrl ? (
+                  {editingCharacter.avatarUrl && editingCharacter.avatarUrl !== '/default-avatar.jpg' ? (
                     <img 
-                      src={editingCharacter.avatarUrl} 
+                      src={`${editingCharacter.avatarUrl}?t=${Date.now()}`} 
                       alt={`${editingCharacter.name} avatar`}
                       className="w-full h-48 object-cover rounded-lg mt-2"
                       onError={(e) => {
@@ -998,7 +1003,7 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
                     />
                   ) : (
                     <div className="w-full h-48 bg-slate-700 rounded-lg flex items-center justify-center mt-2">
-                      <span className="text-slate-400">No avatar</span>
+                      <span className="text-slate-400">No avatar selected</span>
                     </div>
                   )}
                 </div>
