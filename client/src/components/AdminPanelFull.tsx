@@ -161,7 +161,7 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
   // Character update mutation
   const updateCharacterMutation = useMutation({
     mutationFn: async ({ id, ...character }: any) => {
-      return await apiRequest("PATCH", `/api/admin/characters/${id}`, character);
+      return await apiRequest("PUT", `/api/admin/characters/${id}`, character);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/characters"] });
