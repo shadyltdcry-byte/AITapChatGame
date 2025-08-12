@@ -30,7 +30,10 @@ import {
   Database,
   Activity,
   MessageSquare,
-  Shield
+  Shield,
+  ImageIcon,
+  Upload,
+  Eye
 } from "lucide-react";
 
 interface AdminPanelProps {
@@ -107,6 +110,11 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
 
   const { data: wheelPrizes = [], isLoading: prizesLoading } = useQuery<WheelPrize[]>({
     queryKey: ["/api/admin/wheel-prizes"],
+    enabled: isOpen,
+  });
+
+  const { data: mediaFiles = [], isLoading: mediaLoading } = useQuery<MediaFile[]>({
+    queryKey: ["/api/media"],
     enabled: isOpen,
   });
 
@@ -210,29 +218,33 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-          <TabsList className="grid w-full grid-cols-6 bg-slate-800/50 border border-slate-600">
+          <TabsList className="grid w-full grid-cols-7 bg-slate-800/50 border border-slate-600">
             <TabsTrigger value="dashboard" className="text-white data-[state=active]:bg-blue-600">
-              <Activity className="w-4 h-4 mr-2" />
+              <Activity className="w-4 h-4 mr-1" />
               Dashboard
             </TabsTrigger>
             <TabsTrigger value="users" className="text-white data-[state=active]:bg-purple-600">
-              <Users className="w-4 h-4 mr-2" />
+              <Users className="w-4 h-4 mr-1" />
               Users
             </TabsTrigger>
             <TabsTrigger value="characters" className="text-white data-[state=active]:bg-green-600">
-              <Gamepad2 className="w-4 h-4 mr-2" />
+              <Gamepad2 className="w-4 h-4 mr-1" />
               Characters
             </TabsTrigger>
+            <TabsTrigger value="images" className="text-white data-[state=active]:bg-indigo-600">
+              <ImageIcon className="w-4 h-4 mr-1" />
+              Images
+            </TabsTrigger>
             <TabsTrigger value="wheel" className="text-white data-[state=active]:bg-orange-600">
-              <Coins className="w-4 h-4 mr-2" />
+              <Coins className="w-4 h-4 mr-1" />
               Wheel
             </TabsTrigger>
             <TabsTrigger value="chat" className="text-white data-[state=active]:bg-pink-600">
-              <MessageSquare className="w-4 h-4 mr-2" />
+              <MessageSquare className="w-4 h-4 mr-1" />
               AI Chat
             </TabsTrigger>
             <TabsTrigger value="settings" className="text-white data-[state=active]:bg-red-600">
-              <Settings className="w-4 h-4 mr-2" />
+              <Settings className="w-4 h-4 mr-1" />
               Settings
             </TabsTrigger>
           </TabsList>
@@ -506,6 +518,125 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
                       <Plus className="w-4 h-4 mr-2" />
                       Create Character
                     </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Images Tab */}
+            <TabsContent value="images" className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
+                {/* Image Library */}
+                <Card className="bg-slate-800/50 border-slate-600">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2 justify-between">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5" />
+                        Image Library ({mediaFiles.length} files)
+                      </div>
+                      <Button 
+                        size="sm"
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.multiple = true;
+                          input.accept = 'image/*';
+                          input.onchange = async (e) => {
+                            const files = (e.target as HTMLInputElement).files;
+                            if (files) {
+                              const formData = new FormData();
+                              for (let i = 0; i < files.length; i++) {
+                                formData.append('images', files[i]);
+                              }
+                              try {
+                                const response = await fetch('/api/media/upload', {
+                                  method: 'POST',
+                                  body: formData
+                                });
+                                if (response.ok) {
+                                  queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+                                  toast({ title: "Success", description: `${files.length} files uploaded successfully!` });
+                                }
+                              } catch (error) {
+                                toast({ title: "Error", description: "Upload failed", variant: "destructive" });
+                              }
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Images
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {mediaLoading ? (
+                      <div className="text-center py-8 text-slate-400">Loading images...</div>
+                    ) : mediaFiles.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400">
+                        No images uploaded yet. Click "Upload Images" to get started.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+                        {mediaFiles.map((file: MediaFile) => (
+                          <div key={file.id} className="group relative">
+                            <div className="aspect-square bg-slate-700 rounded-lg overflow-hidden">
+                              <img 
+                                src={file.url} 
+                                alt={file.originalName || file.filename}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).src = '/api/placeholder-image';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                                <div className="flex gap-2">
+                                  <Button 
+                                    size="sm" 
+                                    variant="secondary"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => window.open(file.url, '_blank')}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="destructive"
+                                    className="h-8 w-8 p-0"
+                                    onClick={async () => {
+                                      if (confirm('Delete this image?')) {
+                                        try {
+                                          await apiRequest("DELETE", `/api/media/${file.id}`);
+                                          queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+                                          toast({ title: "Success", description: "Image deleted successfully!" });
+                                        } catch (error) {
+                                          toast({ title: "Error", description: "Failed to delete image", variant: "destructive" });
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-slate-400 truncate">
+                              {file.originalName || file.filename}
+                            </div>
+                            {file.characterId && (
+                              <Badge className="mt-1 bg-purple-600 text-xs">
+                                Assigned to Character
+                              </Badge>
+                            )}
+                            <div className="text-xs text-slate-500 mt-1">
+                              {(file.size / 1024).toFixed(1)} KB
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

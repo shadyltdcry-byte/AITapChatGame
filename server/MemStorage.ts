@@ -29,6 +29,9 @@ export class MemStorage implements IStorage {
   private wheelRewards = new Map<string, WheelReward>();
 
   constructor() {
+    // Load existing media files from uploads directory
+    this.loadExistingMediaFiles();
+    
     // Initialize default settings
     this.gameSettings = {
       id: crypto.randomUUID(),
@@ -425,5 +428,75 @@ export class MemStorage implements IStorage {
 
   async assignMediaToCharacter(mediaId: string, characterId: string): Promise<void> {
     await this.updateMediaFile(mediaId, { characterId });
+  }
+
+  // Load existing media files from uploads directory
+  private async loadExistingMediaFiles(): Promise<void> {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const uploadsDir = './public/uploads';
+      
+      try {
+        const files = await fs.readdir(uploadsDir);
+        
+        for (const filename of files) {
+          if (filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+            const filePath = path.join(uploadsDir, filename);
+            const stats = await fs.stat(filePath);
+            
+            // Create media file entry if it doesn't exist
+            const mediaFile: MediaFile = {
+              id: crypto.randomUUID(),
+              filename: filename,
+              originalName: filename,
+              mimeType: this.getMimeType(filename),
+              size: stats.size,
+              fileType: 'image',
+              url: `/uploads/${filename}`,
+              path: `/uploads/${filename}`,
+              characterId: null,
+              uploadedBy: 'system',
+              tags: [],
+              description: null,
+              isNsfw: false,
+              requiredLevel: 1,
+              chatSendChance: 5,
+              isVipOnly: false,
+              isEventOnly: false,
+              isWheelReward: false,
+              createdAt: stats.birthtime
+            };
+            
+            this.mediaFiles.set(mediaFile.id, mediaFile);
+            console.log(`Loaded existing media file: ${filename}`);
+          }
+        }
+        
+        console.log(`Loaded ${this.mediaFiles.size} existing media files`);
+      } catch (error) {
+        console.log('No uploads directory found or error reading:', error);
+      }
+    } catch (error) {
+      console.error('Error loading existing media files:', error);
+    }
+  }
+
+  private getMimeType(filename: string): string {
+    const ext = filename.toLowerCase().split('.').pop();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'application/octet-stream';
+    }
   }
 }
