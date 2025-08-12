@@ -80,6 +80,7 @@ export class MemStorage implements IStorage {
       isAdmin: user.isAdmin ?? false,
       nsfwEnabled: user.nsfwEnabled ?? false,
       lustGems: user.lustGems ?? 0,
+      isVip: user.isVip ?? false,
       createdAt: new Date()
     };
     this.users.set(newUser.id, newUser);

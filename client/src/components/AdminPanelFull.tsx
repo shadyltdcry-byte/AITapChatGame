@@ -95,17 +95,17 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
   const { toast } = useToast();
 
   // Data fetching
-  const { data: users = [], isLoading: usersLoading } = useQuery({
+  const { data: users = [], isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     enabled: isOpen,
   });
 
-  const { data: characters = [], isLoading: charactersLoading } = useQuery({
+  const { data: characters = [], isLoading: charactersLoading } = useQuery<Character[]>({
     queryKey: ["/api/admin/characters"],
     enabled: isOpen,
   });
 
-  const { data: wheelPrizes = [], isLoading: prizesLoading } = useQuery({
+  const { data: wheelPrizes = [], isLoading: prizesLoading } = useQuery<WheelPrize[]>({
     queryKey: ["/api/admin/wheel-prizes"],
     enabled: isOpen,
   });
@@ -123,11 +123,11 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wheel-prizes"] });
-      toast.success("Prize added successfully!");
+      toast({ title: "Success", description: "Prize added successfully!" });
       setNewPrize({ type: "points", min: 10, max: 100, probability: 0.2, label: "Points" });
     },
     onError: () => {
-      toast.error("Failed to add prize");
+      toast({ title: "Error", description: "Failed to add prize", variant: "destructive" });
     }
   });
 
@@ -138,10 +138,10 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/wheel-prizes"] });
-      toast.success("Prize deleted successfully!");
+      toast({ title: "Success", description: "Prize deleted successfully!" });
     },
     onError: () => {
-      toast.error("Failed to delete prize");
+      toast({ title: "Error", description: "Failed to delete prize", variant: "destructive" });
     }
   });
 
@@ -184,7 +184,7 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/characters"] });
-      toast.success("Character created successfully!");
+      toast({ title: "Success", description: "Character created successfully!" });
       setNewCharacter({
         name: "",
         bio: "",
@@ -195,7 +195,7 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
       });
     },
     onError: () => {
-      toast.error("Failed to create character");
+      toast({ title: "Error", description: "Failed to create character", variant: "destructive" });
     }
   });
 

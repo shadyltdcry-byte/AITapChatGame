@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   isAdmin: boolean("isAdmin").notNull().default(false),
   nsfwEnabled: boolean("nsfwEnabled").notNull().default(false),
   lustGems: integer("lustGems").notNull().default(0),
+  isVip: boolean("isVip").notNull().default(false),
   createdAt: timestamp("createdAt").notNull().default(sql`now()`)
 });
 

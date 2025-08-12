@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { AdminPanel } from "@/components/AdminPanelSimple";
+import AdminPanelFull from "@/components/AdminPanelFull";
 import { Button } from "@/components/ui/button";
 
 export default function Admin() {
@@ -15,7 +15,7 @@ export default function Admin() {
         </Link>
       </header>
 
-      <AdminPanel isOpen={true} onClose={() => {}} />
+      <AdminPanelFull isOpen={true} onClose={() => {}} />
     </div>
   );
 }

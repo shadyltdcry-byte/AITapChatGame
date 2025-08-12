@@ -122,7 +122,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ];
 
         for (const upgradeData of defaultUpgrades) {
-          await storage.createUpgrade(upgradeData);
+          await storage.createUpgrade({
+            ...upgradeData,
+            userId: defaultUserId
+          });
         }
 
         // Create a default character for the new user
