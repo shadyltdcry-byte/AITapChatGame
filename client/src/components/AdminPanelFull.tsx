@@ -64,6 +64,38 @@ interface Character {
   isVip: boolean;
   isEvent: boolean;
   isWheelReward: boolean;
+  imageUrl?: string;
+  avatarUrl?: string;
+  backstory?: string;
+  interests?: string;
+  quirks?: string;
+  description?: string;
+  personalityStyle?: string;
+  chatStyle?: string;
+  likes?: string;
+  dislikes?: string;
+}
+
+interface MediaFile {
+  id: string;
+  filename: string;
+  originalName?: string;
+  mimeType: string;
+  size: number;
+  fileType: string;
+  url: string;
+  path: string;
+  characterId?: string | null;
+  uploadedBy?: string;
+  tags?: string[];
+  description?: string | null;
+  isNsfw?: boolean;
+  requiredLevel?: number;
+  chatSendChance?: number;
+  isVipOnly?: boolean;
+  isEventOnly?: boolean;
+  isWheelReward?: boolean;
+  createdAt: Date;
 }
 
 interface WheelPrize {
@@ -92,8 +124,11 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
     personality: "friendly",
     requiredLevel: 1,
     isNsfw: false,
-    isVip: false
+    isVip: false,
+    imageUrl: "",
+    avatarUrl: ""
   });
+  const [editingCharacter, setEditingCharacter] = useState<Character | null>(null);
 
   const { toast } = useToast();
 
@@ -121,6 +156,21 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/admin/stats"],
     enabled: isOpen,
+  });
+
+  // Character update mutation
+  const updateCharacterMutation = useMutation({
+    mutationFn: async ({ id, ...character }: any) => {
+      return await apiRequest("PATCH", `/api/admin/characters/${id}`, character);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/characters"] });
+      toast({ title: "Success", description: "Character updated successfully!" });
+      setEditingCharacter(null);
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to update character", variant: "destructive" });
+    }
   });
 
   // Mutations
@@ -161,8 +211,8 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
         interests: "Gaming, Anime",
         quirks: "Unique personality",
         description: data.bio,
-        imageUrl: "/default-character.jpg",
-        avatarUrl: "/default-avatar.jpg",
+        imageUrl: data.imageUrl || "/default-character.jpg",
+        avatarUrl: data.avatarUrl || "/default-avatar.jpg",
         personalityStyle: "Sweet & Caring",
         chatStyle: "casual",
         likes: "Adventures",
@@ -199,7 +249,9 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
         personality: "friendly",
         requiredLevel: 1,
         isNsfw: false,
-        isVip: false
+        isVip: false,
+        imageUrl: "",
+        avatarUrl: ""
       });
     },
     onError: () => {
@@ -426,7 +478,7 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
                                 size="sm" 
                                 variant="outline"
                                 className="text-purple-400 border-purple-400 hover:bg-purple-400/10"
-                                onClick={() => setSelectedCharacter(character)}
+                                onClick={() => setEditingCharacter(character)}
                               >
                                 <Edit className="w-3 h-3" />
                               </Button>
@@ -465,6 +517,38 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
                         placeholder="Character description and personality"
                         rows={3}
                       />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-white">Main Image</Label>
+                        <select 
+                          value={newCharacter.imageUrl}
+                          onChange={(e) => setNewCharacter({...newCharacter, imageUrl: e.target.value})}
+                          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                        >
+                          <option value="">Select image</option>
+                          {Array.isArray(mediaFiles) && mediaFiles.map((file: MediaFile) => (
+                            <option key={file.id} value={file.url}>
+                              {file.originalName || file.filename}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <Label className="text-white">Avatar Image</Label>
+                        <select 
+                          value={newCharacter.avatarUrl}
+                          onChange={(e) => setNewCharacter({...newCharacter, avatarUrl: e.target.value})}
+                          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                        >
+                          <option value="">Select avatar</option>
+                          {Array.isArray(mediaFiles) && mediaFiles.map((file: MediaFile) => (
+                            <option key={file.id} value={file.url}>
+                              {file.originalName || file.filename}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -870,6 +954,188 @@ export default function AdminPanelFull({ isOpen, onClose }: AdminPanelProps) {
           </ScrollArea>
         </Tabs>
       </DialogContent>
+
+      {/* Character Edit Modal */}
+      {editingCharacter && (
+        <Dialog open={!!editingCharacter} onOpenChange={() => setEditingCharacter(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900 text-white border-slate-700">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-purple-400">
+                Edit Character: {editingCharacter.name}
+              </DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+              {/* Character Images Preview */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <Label className="text-white text-sm">Current Main Image</Label>
+                  {editingCharacter.imageUrl ? (
+                    <img 
+                      src={editingCharacter.imageUrl} 
+                      alt={`${editingCharacter.name} main`}
+                      className="w-full h-48 object-cover rounded-lg mt-2"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/default-character.jpg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-slate-700 rounded-lg flex items-center justify-center mt-2">
+                      <span className="text-slate-400">No main image</span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-center">
+                  <Label className="text-white text-sm">Current Avatar</Label>
+                  {editingCharacter.avatarUrl ? (
+                    <img 
+                      src={editingCharacter.avatarUrl} 
+                      alt={`${editingCharacter.name} avatar`}
+                      className="w-full h-48 object-cover rounded-lg mt-2"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/default-avatar.jpg';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-48 bg-slate-700 rounded-lg flex items-center justify-center mt-2">
+                      <span className="text-slate-400">No avatar</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Edit Form */}
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-white">Name</Label>
+                  <Input 
+                    value={editingCharacter.name}
+                    onChange={(e) => setEditingCharacter({...editingCharacter, name: e.target.value})}
+                    className="bg-slate-700 border-slate-600 text-white"
+                  />
+                </div>
+                
+                <div>
+                  <Label className="text-white">Bio</Label>
+                  <Textarea 
+                    value={editingCharacter.bio}
+                    onChange={(e) => setEditingCharacter({...editingCharacter, bio: e.target.value})}
+                    className="bg-slate-700 border-slate-600 text-white"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white">Personality</Label>
+                    <select 
+                      value={editingCharacter.personality}
+                      onChange={(e) => setEditingCharacter({...editingCharacter, personality: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                    >
+                      <option value="friendly">Friendly</option>
+                      <option value="flirty">Flirty</option>
+                      <option value="mysterious">Mysterious</option>
+                      <option value="playful">Playful</option>
+                      <option value="shy">Shy</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-white">Required Level</Label>
+                    <Input 
+                      type="number"
+                      value={editingCharacter.requiredLevel}
+                      onChange={(e) => setEditingCharacter({...editingCharacter, requiredLevel: parseInt(e.target.value)})}
+                      className="bg-slate-700 border-slate-600 text-white"
+                      min="1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white">Main Image</Label>
+                    <select 
+                      value={editingCharacter.imageUrl || ""}
+                      onChange={(e) => setEditingCharacter({...editingCharacter, imageUrl: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                    >
+                      <option value="">Select image</option>
+                      {Array.isArray(mediaFiles) && mediaFiles.map((file: MediaFile) => (
+                        <option key={file.id} value={file.url}>
+                          {file.originalName || file.filename}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-white">Avatar Image</Label>
+                    <select 
+                      value={editingCharacter.avatarUrl || ""}
+                      onChange={(e) => setEditingCharacter({...editingCharacter, avatarUrl: e.target.value})}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                    >
+                      <option value="">Select avatar</option>
+                      {Array.isArray(mediaFiles) && mediaFiles.map((file: MediaFile) => (
+                        <option key={file.id} value={file.url}>
+                          {file.originalName || file.filename}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="edit-nsfw"
+                      checked={editingCharacter.isNsfw}
+                      onCheckedChange={(checked) => setEditingCharacter({...editingCharacter, isNsfw: checked})}
+                    />
+                    <Label htmlFor="edit-nsfw" className="text-white">NSFW</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="edit-vip"
+                      checked={editingCharacter.isVip}
+                      onCheckedChange={(checked) => setEditingCharacter({...editingCharacter, isVip: checked})}
+                    />
+                    <Label htmlFor="edit-vip" className="text-white">VIP</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      id="edit-event"
+                      checked={editingCharacter.isEvent}
+                      onCheckedChange={(checked) => setEditingCharacter({...editingCharacter, isEvent: checked})}
+                    />
+                    <Label htmlFor="edit-event" className="text-white">Event</Label>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <Button 
+                    onClick={() => updateCharacterMutation.mutate({ 
+                      id: editingCharacter.id, 
+                      ...editingCharacter 
+                    })}
+                    disabled={updateCharacterMutation.isPending}
+                    className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                  >
+                    {updateCharacterMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingCharacter(null)}
+                    className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 }
