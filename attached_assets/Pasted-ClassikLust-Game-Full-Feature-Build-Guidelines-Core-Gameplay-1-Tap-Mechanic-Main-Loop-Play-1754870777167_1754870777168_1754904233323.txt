@@ -1,0 +1,1263 @@
+ClassikLust Game – Full Feature + Build Guidelines
+
+Core Gameplay
+
+1. Tap Mechanic (Main Loop)
+
+Player taps to earn Lust Points. Use character image to tap with a little sprite that shows your gaining points 
+
+Lust Points accumulate towards upgrades which increases level progression (all level 4 upgrades to level up to 5 for example) 
+
+Tap rate balanced via cooldowns or energy costs. 
+
+Energy system:
+
+Max energy bar (e.g., 2000/2000).
+
+Energy regenerates over time (+5 every X seconds).
+
+Energy consumed per tap.
+
+
+
+
+2. Level System
+
+Points required per upgrade increase progressively.
+
+Level-ups grant bonuses: permanent multipliers, access to upgrades, or new pictures and/or new characters 
+
+Have required upgrades completed to highlight level up button 
+
+
+3. Upgrades
+
+Buyable upgrades that increase tap output, hourly passive generation, or unlock cosmetic changes.
+
+Stored in database with player progress.
+
+
+
+
+
+---
+
+Mini-Games
+
+1. Spin Wheel
+
+Daily spin (or cooldown-based).
+
+Prizes table in DB: points, energy refills, rare cosmetics, etc.
+
+Cooldown tracking in DB column last_wheel_spin.
+
+
+
+
+
+---
+
+Character Management
+
+1. Character Profiles
+
+Unlockable characters (Katie, Tessa, Luna, Aria…)
+
+Each has:
+
+Name, bio, custom image(s), custom personality % values, custom mood values (changes either per 24 hours or every time the player opens a new game session, custom avatar, NSFW (with NSFW off option for player in settings), custom level per picture, min/max chat delay response, random picture % send chance and % chance when gifted by player, 
+
+Switch between characters in GUI.
+
+Store unlocked state in DB.
+
+
+
+2. Character Manager
+
+Admin panel to:
+
+Add/edit/remove characters and all customized functions and triggers
+
+Change stats or bonuses.
+
+Avatar cropping 
+
+
+
+---
+
+Image Management
+
+1. Gallery
+
+Unlockable images tied to characters or achievements.
+
+Admin panel functions:
+
+Upload images.
+
+Remove/replace images.
+
+Assign to character IDs.
+
+Show all images in 1 place with sort options by level, characters and NSFW 
+
+Edit image fuctions
+
+
+
+---
+
+AI Chat System
+
+1. Chat with Characters
+
+Sends player messages to API.
+
+Receives AI-generated replies.
+
+Chat log saved in DB for continuity.
+
+Trigger word fuction
+
+Picture % sending fuction
+
+Personality and mood value functions 
+
+Min/max chat reply delay fuctions 
+
+Custom greetings/response trigger by certain mood states
+
+OpenAI/Gemini AI compatibility if available 
+
+
+
+
+
+2. Admin Chat Control
+
+Enable/disable chat globally.
+
+Clear logs.
+
+Set default prompts or personality profiles per character.
+
+
+
+
+
+---
+
+UI & Theme Control
+
+1. Theme Editor
+
+Change colors, fonts, layout from GUI.
+
+Save to user settings in DB.
+
+
+
+2. Text Content Editor
+
+Admin can change in-game text:
+
+Labels, button names, tooltips.
+
+Multi-language support.
+
+
+
+
+3. Icon/Layout Placement
+
+Drag-and-drop icon placement.
+
+Store in JSON format for easy rendering.
+
+
+
+
+
+---
+
+Admin Panel
+
+Access to all CRUD operations for:
+
+Users.
+
+Characters.
+
+Images.
+
+Themes.
+
+Spin wheel prizes.
+
+Chat logs.
+
+
+Logs for:
+
+Login attempts.
+
+Errors.
+
+Admin actions.
+
+
+
+
+---
+
+Database Schema (Critical Columns)
+
+users:
+
+id, username, points, level, energy, hourly_rate
+
+last_wheel_spin, account_status, ban_reason, ban_expires
+
+chat_enabled, upgrade_enabled, theme_settings
+
+
+characters:
+
+id, name, bio, image_url, unlocked, bonus_type, bonus_value
+
+
+images:
+
+id, character_id, url, unlock_condition
+
+
+wheel_prizes:
+
+id, prize_type, amount, rarity
+
+
+chat_logs:
+
+id, user_id, character_id, message, timestamp
+
+
+
+
+---
+
+Logging & Error Management
+
+1. Global Error Handler
+
+Catches JS & SQL errors.
+
+Logs to DB + console + optional file output.
+
+Timestamp + stack trace stored for debugging.
+
+
+
+2. Admin Debug Tools
+
+Toggle debug overlay in-game.
+
+Download error logs directly.
+
+
+
+
+
+---
+
+Development Guidelines to Avoid 9000 Patch Hell
+
+1. Modular Code Structure
+
+Split into feature-specific files:
+
+tap.js, chat.js, characters.js, images.js, spin.js, admin.js
+
+
+Central init.js to load modules in correct order.
+
+
+
+2. Function Stubbing
+
+Before feature build, define all function names as empty stubs to avoid undefined runtime errors.
+
+Fill them in progressively.
+
+
+
+3. Version Control Discipline
+
+Use Git. Commit per feature, not per random fix.
+
+Tag working builds so rollback is easy.
+
+
+
+4. Database Migration Scripts
+
+Always create migration scripts for schema changes.
+
+Never manually change DB in production.
+
+
+
+5. Test in Dev Mode First
+
+No pushing directly to live.
+
+Automated tests for core functions: tapping, spinning, character switching, chat sending.
+
+
+
+6. Admin-First Development
+
+Build admin tools for managing content before you hook features to UI.
+
+This keeps the game flexible without rewriting.
+
+
+Full Project Layout (Node + Express + MySQL2) — Ready-to-implement
+
+1) Install (starter)
+
+# from your project root
+npm init -y
+npm i express mysql dotenv jsonwebtoken bcryptjs multer sharp express-validator helmet cors
+# dev
+npm i -D nodemon eslint
+
+2) Project folder structure (can adjust to your needs or if you see a more optimized way) 
+
+/src
+  /config
+    db.js                # MySQL 
+    env.js               # env validation
+  /routes
+    authRoutes.js
+    gameRoutes.js
+    adminRoutes.js
+    imageRoutes.js
+    chatRoutes.js
+    extraRoutes.js     #Events, VIP, Wheel, etc
+  /controllers
+    authController.js
+    gameController.js
+    adminController.js
+    imageController.js
+    chatController.js
+    extraController.js
+  /models
+    userModel.js
+    characterModel.js
+    imageModel.js
+    chatModel.js
+    adminActionModel.js
+    extraModel.js
+  /services
+    imageService.js      # sharp image processing, storage
+    chatService.js       # chat session/context manager + LLM adapter
+    characterService.js
+    extraService.js
+  /middleware
+    auth.js
+    roles.js
+    errorHandler.js
+  app.js                 # Express setup + route mounting
+  server.js              # start server
+/public
+  /images
+  /avatars
+  /thumbnails
+/scripts
+  db-init.sql            # schema + some seed data
+.env
+README.md
+package.json
+
+
+---
+
+3) Environment (.env example)
+
+PORT=3000
+NODE_ENV=development
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=game_user
+DB_PASS=supersecret
+DB_NAME=game_db
+JWT_SECRET=verysecretkey
+UPLOAD_DIR=./public/images
+AI_API_KEY=your_openai_or_other_key
+
+
+---
+
+4) DB connector src/config/db.js
+
+// src/config/db.js
+const mysql = require('mysql/promise');
+const { DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT } = process.env;
+
+const pool = mysql.createPool({
+  host: DB_HOST || '127.0.0.1',
+  port: DB_PORT || 3306,
+  user: DB_USER,
+  password: DB_PASS,
+  database: DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0
+});
+
+module.exports = pool;
+
+
+---
+
+5) Basic server & app wiring
+
+src/app.js
+
+const express = require('express');
+const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const errorHandler = require('./middleware/errorHandler');
+
+const authRoutes = require('./routes/authRoutes');
+const gameRoutes = require('./routes/gameRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const imageRoutes = require('./routes/imageRoutes');
+const chatRoutes = require('./routes/chatRoutes');
+const extraRoutes = require('./routes/extraRoutes');
+
+const app = express();
+
+app.use(helmet());
+app.use(cors());
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true }));
+
+// static
+app.use('/public', express.static('public'));
+
+// mount routes
+app.use('/auth', authRoutes);
+app.use('/game', gameRoutes);
+app.use('/image', imageRoutes);
+app.use('/chat', chatRoutes);
+app.use('/admin', adminRoutes);
+app.use('/extra', extraRoutes);
+
+// central error handler
+app.use(errorHandler);
+
+module.exports = app;
+
+server.js
+
+require('dotenv').config();
+const app = require('./src/app');
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Server listening on ${PORT}`);
+});
+
+
+---
+
+6) Minimal error handler middleware
+
+// src/middleware/errorHandler.js
+module.exports = (err, req, res, next) => {
+  console.error(err);
+  const status = err.status || 500;
+  res.status(status).json({
+    ok: false,
+    error: err.message || 'Server error'
+  });
+};
+
+
+---
+
+7) Auth (JWT) middleware example
+
+// src/middleware/auth.js
+const jwt = require('jsonwebtoken');
+const pool = require('../config/db');
+
+module.exports = async (req, res, next) => {
+  const header = req.headers.authorization;
+  if (!header) return res.status(401).json({ ok:false, error: 'Missing auth' });
+  const token = header.split(' ')[1];
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    // attach user from DB
+    const [rows] = await pool.query('SELECT id, username, role FROM users WHERE id = ?', [payload.id]);
+    if (!rows[0]) return res.status(401).json({ ok:false, error:'Invalid user' });
+    req.user = rows[0];
+    next();
+  } catch (e) {
+    next(e);
+  }
+};
+
+
+---
+
+8) Key models (patterns — keep models thin, use services for logic)
+
+src/models/characterModel.js (example)
+
+const pool = require('../config/db');
+
+async function getCharactersByUser(userId) {
+  const [rows] = await pool.query('SELECT * FROM characters WHERE user_id = ?', [userId]);
+  return rows;
+}
+
+async function createCharacter(data) {
+  const { user_id, name, attributes, avatar_url } = data;
+  const [result] = await pool.query(
+    'INSERT INTO characters (user_id, name, level, experience, attributes, avatar_url, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
+    [user_id, name, 1, 0, JSON.stringify(attributes || {}), avatar_url || null]
+  );
+  return result.insertId;
+}
+
+module.exports = { getCharactersByUser, createCharacter };
+
+
+---
+
+9) Image upload & processing service (sharp + multer)
+
+src/services/imageService.js
+
+const fs = require('fs').promises;
+const path = require('path');
+const sharp = require('sharp');
+const pool = require('../config/db');
+
+const UPLOAD_DIR = process.env.UPLOAD_DIR || './public/images';
+
+async function saveImage({ buffer, originalname, ownerId, tags = [] }) {
+  // hashed filename
+  const hash = Date.now() + '-' + Math.random().toString(36).slice(2,8);
+  const ext = path.extname(originalname) || '.png';
+  const filename = `${hash}${ext}`;
+  const filepath = path.join(UPLOAD_DIR, filename);
+
+  // ensure dir
+  await fs.mkdir(UPLOAD_DIR, { recursive: true });
+
+  // process & write
+  await sharp(buffer)
+    .resize(1200, 1200, { fit: 'inside' })
+    .toFile(filepath);
+
+  // thumbnail
+  await sharp(buffer).resize(240, 240).toFile(path.join(UPLOAD_DIR, 'thumb-' + filename));
+
+  // DB entry
+  const [result] = await pool.query(
+    'INSERT INTO images (owner_id, file_name, file_path, tags, created_at) VALUES (?, ?, ?, ?, NOW())',
+    [ownerId, originalname, `/public/images/${filename}`, JSON.stringify(tags)]
+  );
+  return { id: result.insertId, path: `/public/images/${filename}` };
+}
+
+module.exports = { saveImage };
+
+src/routes/imageRoutes.js (multer wiring)
+
+const express = require('express');
+const multer = require('multer');
+const imageService = require('../services/imageService');
+const auth = require('../middleware/auth');
+
+const upload = multer(); // memory storage
+const router = express.Router();
+
+router.post('/upload', auth, upload.single('image'), async (req, res, next) => {
+  try {
+    if (!req.file) return res.status(400).json({ ok:false, error:'No file' });
+    const result = await imageService.saveImage({ buffer: req.file.buffer, originalname: req.file.originalname, ownerId: req.user.id });
+    res.json({ ok:true, image: result });
+  } catch (e) { next(e); }
+});
+
+module.exports = router;
+
+
+---
+
+10) Chat manager + AI adapter (pluggable)
+
+src/services/chatService.js
+
+const pool = require('../config/db');
+
+// very small context manager example
+const contexts = new Map(); // in-memory context per session (for scale, persist to redis)
+
+async function appendMessage(userId, characterId, sender, message) {
+  await pool.query('INSERT INTO chat_logs (user_id, character_id, sender, message, timestamp) VALUES (?, ?, ?, ?, NOW())', [userId, characterId, sender, message]);
+}
+
+async function getHistory(characterId, limit = 100) {
+  const [rows] = await pool.query('SELECT * FROM chat_logs WHERE character_id = ? ORDER BY id DESC LIMIT ?', [characterId, limit]);
+  return rows.reverse();
+}
+
+// adapter function — plug into OpenAI or other LLM
+async function askAI({ userId, characterId, userMessage, llmAdapter }) {
+  // load context (history), trim to token limit, call llmAdapter
+  const history = await getHistory(characterId, 30);
+  const messages = history.map(h => ({ role: h.sender === 'user' ? 'user' : 'assistant', content: h.message }));
+  messages.push({ role: 'user', content: userMessage });
+
+  const aiResponse = await llmAdapter(messages); // llmAdapter MUST be provided
+  await appendMessage(userId, characterId, 'npc', aiResponse);
+  return aiResponse;
+}
+
+module.exports = { appendMessage, getHistory, askAI };
+
+Note: llmAdapter should be a function you implement to call OpenAI or another LLM API (handle tokens, rate-limits, retries). Keep an abstraction layer to swap out providers.
+
+
+---
+
+11) Character CRUD (controller example)
+
+src/controllers/gameController.js
+
+const characterModel = require('../models/characterModel');
+
+async function listCharacters(req, res, next) {
+  try {
+    const chars = await characterModel.getCharactersByUser(req.user.id);
+    res.json({ ok:true, characters: chars });
+  } catch (e) { next(e); }
+}
+
+async function createCharacter(req, res, next) {
+  try {
+    const payload = req.body;
+    payload.user_id = req.user.id;
+    const id = await characterModel.createCharacter(payload);
+    res.json({ ok:true, id });
+  } catch (e) { next(e); }
+}
+
+module.exports = { listCharacters, createCharacter };
+
+
+---
+
+12) Admin editing (critical admin features)
+
+src/controllers/adminController.js
+
+const pool = require('../config/db');
+
+async function editCharacter(req, res, next) {
+  try {
+    const { id } = req.params;
+    const updates = req.body; // validate keys
+    // transaction: fetch before, update, record admin action
+    const conn = await pool.getConnection();
+    try {
+      await conn.beginTransaction();
+      const [beforeRows] = await conn.query('SELECT * FROM characters WHERE id = ?', [id]);
+      if (!beforeRows[0]) throw { status:404, message: 'Not found' };
+      const before = beforeRows[0];
+
+      await conn.query('UPDATE characters SET name=?, level=?, experience=?, attributes=?, avatar_url=? WHERE id = ?', [
+        updates.name || before.name,
+        updates.level ?? before.level,
+        updates.experience ?? before.experience,
+        JSON.stringify(updates.attributes ?? JSON.parse(before.attributes || '{}')),
+        updates.avatar_url ?? before.avatar_url,
+        id
+      ]);
+
+      await conn.query('INSERT INTO admin_actions (admin_id, action_type, target_id, details, timestamp) VALUES (?, ?, ?, ?, NOW())', [
+        req.user.id, 'edit_character', id, JSON.stringify({ before, after: updates })
+      ]);
+
+      await conn.commit();
+      res.json({ ok:true });
+    } catch (e) {
+      await conn.rollback();
+      throw e;
+    } finally {
+      conn.release();
+    }
+  } catch (e) { next(e); }
+}
+
+module.exports = { editCharacter };
+
+Mount with an admin route that requires roles middleware to ensure req.user.role === 'admin'.
+
+
+---
+
+13) DB schema (simplified) — scripts/db-init.sql
+
+CREATE DATABASE IF NOT EXISTS game_db;
+USE game_db;
+
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  password_hash VARCHAR(255) NOT NULL,
+  email VARCHAR(100),
+  role ENUM('player','mod','admin') DEFAULT 'player',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE characters (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  name VARCHAR(60),
+  level INT DEFAULT 1,
+  experience INT DEFAULT 0,
+  attributes JSON,
+  avatar_url VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE images (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  owner_id INT,
+  file_name VARCHAR(255),
+  file_path VARCHAR(255),
+  tags JSON,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE chat_logs (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
+  character_id INT,
+  sender ENUM('user','npc','system'),
+  message TEXT,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE admin_actions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  admin_id INT,
+  action_type VARCHAR(80),
+  target_id INT,
+  details JSON,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+---
+
+14) Important policies & safety checks (must implement)
+
+Validate and sanitize all user input (express-validator).
+
+Limit file sizes for uploads and validate mime types.
+
+Rate-limit chat endpoints or require paid quota to prevent abuse of LLM API.
+
+Keep admin endpoints audited — always log before/after and admin ID.
+
+Don’t keep secret keys in code — use env vars and .env only in dev.
+
+
+
+---
+
+15) How this gets you up & running (quick checklist)
+
+1. Create .env and install deps.
+
+
+2. Run scripts/db-init.sql on your MySQL server.
+
+
+3. Start server: node server.js (or nodemon server.js for dev).
+
+
+4. Register a user, create JWT with /auth/login, test /game/characters endpoints.
+
+
+5. Test image upload /image/upload (multipart form).
+
+
+6. Hook chatService to your LLM adapter and test /chat/send.
+
+
+
+
+---
+
+16) Scaling / Production notes (short)
+
+Use Redis for chat context and session caching (avoid in-memory maps).
+
+Use S3 or CDN for images in production; serve via signed URLs.
+
+Use connection pooling and monitor slow queries (enable slow query log).
+
+Use migrations (Flyway / Knex / Sequelize) for schema changes.
+
+
+
+---
+
+
+Straight to it
+
+
+---
+
+1. Character Management
+
+This is where you control everything about your characters — who they are, how they grow, and what makes them tick.
+
+Character Data: Store info like name, bio, avatar, NSFW status, and base stats.
+
+Unlocking: Characters can be unlocked by players based on certain conditions—level, achievements, or random chance.
+
+Levels & Progression: Characters have levels; leveling up requires meeting criteria (e.g., player level, affection points). Progression can unlock abilities or content.
+
+Affection & Relationships: Track affection levels or bonds with characters, affecting dialogue or bonuses.
+
+Random Unlocks: Sometimes characters unlock randomly with weighted chances, adding surprise.
+
+Filtering: NSFW content can be toggled on/off depending on user settings.
+
+Avatar Management: Each character can have one or more avatars, possibly changing with level or events.
+
+Personality Traits: Characters have defined personalities that affect AI chat tone and behavior.
+
+
+
+---
+
+2. Upgrade Management
+
+Upgrades let characters grow stronger or gain new features, tied to level or other requirements.
+
+Upgrade Catalog: Maintain a list of possible upgrades per character or globally.
+
+Unlock Criteria: Upgrades require players to reach certain levels or have other upgrades unlocked.
+
+Application: Players apply upgrades to their characters, altering stats or abilities.
+
+Removal/Reset: Allow upgrades to be removed or reset for flexibility.
+
+Composite Checks: Upgrades may require complex conditions (e.g., level 3 AND affection 5).
+
+Bonus Calculation: Keep track of all upgrade bonuses to calculate final character power.
+
+
+
+---
+
+3. Image Management
+
+Managing visuals—avatars, galleries, event images, and media content.
+
+Uploads & Linking: Support users uploading images or linking external ones (e.g., Google Drive).
+
+Multiple Media Types: Handle images, GIFs, and videos seamlessly.
+
+Batch Uploads: Allow uploading multiple files at once.
+
+Metadata: Store info like NSFW flags, level requirements, event tags, and VIP status.
+
+Filtering & Access Control: Only show images appropriate to user’s level, event participation, and NSFW settings.
+
+Thumbnails & Optimization: Generate optimized previews for fast loading.
+
+Event & Character Association: Link images to specific characters or events.
+
+Fallbacks: Provide default images or placeholders when media fails to load.
+
+
+
+---
+
+4. AI Chat Management
+
+The heart of dynamic interaction—characters talk, remember, and adapt.
+
+Personality Profiles: Each character has a base personality dictating tone, humor, empathy, etc.
+
+Triggers & Events: Detect keywords or events that alter AI responses or start special dialogue.
+
+Moods: AI maintains a mood state that changes based on conversation flow.
+
+Custom Player Replies: Store preferred user responses to personalize conversations.
+
+Chat History: Keep logs of conversations for context and continuity.
+
+Multi-Provider Support: Use OpenAI or Gemini AI for responses, falling back to a default system if needed.
+
+Greetings & Farewells: Predefined openers and closers to make chats feel natural.
+
+Settings: Control AI parameters like creativity, length, and response speed.
+
+Reset & Refresh: Ability to reset conversations and mood states.
+
+
+
+---
+
+5. Content Management
+
+Managing everything extra: events, VIP perks, wheels, boosters—making the game lively and rewarding.
+
+Event Management: Create and schedule time-limited events with special rewards or characters.
+
+VIP System: Track user VIP levels, unlocking exclusive perks and content.
+
+Boosters: Temporary buffs users can activate to gain advantages.
+
+Wheel Spins: Interactive wheels offering random rewards like characters, images, or boosters.
+
+Rewards Distribution: Assign rewards from events or wheels to users properly.
+
+Content Scheduling: Timed release of new content, promotions, or announcements.
+
+User Interaction Tracking: Log how users engage with content for analytics and improvements.
+
+Filtering & Permissions: VIP-only content or NSFW content handled carefully.
+
+ClassikLust Game — Deep-Dive Feature Breakdown & Structure
+
+
+---
+
+1. Leveling System (Based on Upgrade Requirements)
+
+Level progression does NOT just depend on raw points — it’s strictly tied to upgrades the player has purchased/unlocked.
+
+Each level requires completing a set of upgrade prerequisites — e.g.,
+To reach Level 5: You must have all Level 4 upgrades purchased.
+
+This makes leveling a checklist, not just XP grind — adds strategy and progression gating.
+
+Bonus: Leveling unlocks access to higher-tier upgrades and new characters or content.
+
+The system should show which upgrades remain to hit next level to encourage goal-driven gameplay.
+
+
+
+---
+
+2. Character Management (Complex, Custom Personality & AI-Driven)
+
+Characters are living entities in your game, with tons of custom attributes to make them feel unique, dynamic, and reactive.
+
+Must-Have Character Data Fields:
+
+Basic Info:
+
+name (string)
+
+bio (string) — short, lore-heavy background
+
+avatarUrl (string) — main display picture
+
+
+Personality Hardcoded Values:
+
+Traits (e.g., sarcasm, kindness, bluntness) — numeric scale or weighted percentages
+
+Mood States (happy, annoyed, flirty, etc.) — dynamic values that shift during conversation or events
+
+Special Triggers — keywords or phrases in player chat that unlock unique responses or events
+
+Min/Max Chat Delay — controls AI reply speed, to feel more natural or snappy
+
+
+AI Chat Logic:
+
+Primary responses come from hardcoded personality data and scripted dialogue trees (fallback/core)
+
+Secondary: Use OpenAI or Gemini AI to generate dynamic, fresh replies
+
+Fallback to hardcoded dialogue if API fails or to maintain character consistency
+
+
+Unlock & Progression:
+
+unlocked (boolean) — if player can access this character
+
+level (int) — character’s own progression, can unlock new pics or dialogue
+
+unlockConditions — by player level, events, achievements, or random weighted chance
+
+
+Content Flags:
+
+nsfw (boolean) — character or pictures marked NSFW
+
+NSFW toggle available globally for players (turn on/off NSFW content)
+
+
+Picture Management:
+
+Store multiple images per character, tagged with:
+
+Level required
+
+Event tied to
+
+VIP-only or general access
+
+NSFW flag
+
+
+Random chance percentages to send a picture in chat or show in gallery
+
+
+Personality Modifiers:
+
+Allow mood and personality to shift based on player interaction history or timed events
+
+Implement affection or relationship metrics that influence chat tone or bonuses
+
+
+
+
+---
+
+3. Image Management
+
+Images aren’t just static content — they need to be carefully curated, gated, and tagged.
+
+Key Features:
+
+Multiple Access Filters:
+
+By player level (e.g., pics unlock at level 5+)
+
+By event (holiday, seasonal, special promotions)
+
+By VIP status (exclusive images only for VIP players)
+
+By NSFW toggle — filtered out if player disables NSFW
+
+
+Gallery Views:
+
+Sort/filter by character, event, level required, NSFW status
+
+
+Upload & Replace:
+
+Admins upload images via panel, assign metadata tags (character, level, event, VIP, NSFW)
+
+Ability to batch replace or delete obsolete images
+
+
+Optimization:
+
+Store thumbnails for fast loading, full res for detailed views
+
+
+Access Control:
+
+Enforce gating logic both frontend (UI) and backend (API) so players only see what they qualify for
+
+
+
+
+---
+
+4. Events, Boosters, Prizes
+
+These add layers of engagement, rarity, and incentives.
+
+Events:
+
+Time-limited with start/end dates
+
+Special characters, images, upgrades, or chat triggers unlocked only during event
+
+Track player participation (for rewards or leaderboard)
+
+
+Boosters:
+
+Temporary buffs to tap rate, energy regen, or prize odds
+
+Activate via UI, duration tracked in DB per user
+
+
+Spin Wheel Prizes:
+
+Weighted random prize system with categories:
+
+Points
+
+Energy refills
+
+Cosmetic items (images, avatars)
+
+Boosters
+
+
+Rarity tiers: Common, Rare, Epic, Legendary
+
+Prize pool editable by admin
+
+Cooldown timer tracked per player
+
+
+VIP Perks:
+
+Exclusive content (characters, images, boosters) unlocked based on VIP tier
+
+VIP tier stored per user, settable/admin manageable
+
+
+Content Scheduling:
+
+All events, images, boosters can have scheduling metadata for automatic activation/deactivation
+
+Achievements with real progress bars, categories (All/In Progress/Completed), and claimable rewards — legit motivational triggers right there. Players wanna see that progress and know what’s next.
+
+Chat UI with that intimate, compact pop-up style, clear user and NPC bubbles — feels cozy and modern, not overwhelming.
+
+Wheel spin — simple, bright, clear cooldown timer, and a bold “Spin Now” button. Visual rings add a nice touch of anticipation.
+
+VIP Membership with active benefits and upgrade prompts — smooth sales funnel style without shoving it down players’ throats.
+
+Upgrade menu with level indicators, point costs, and progress bars — good for transparency, so players know what they’re investing in.
+
+Grid-style unlockables/achievements/characters with placeholder “Not Unlocked” and “Coming Soon” — hype builder and roadmap tease.
+
+Main gameplay interface showing points, energy, and event news — everything important front and center with easy access.
+
+
+Achievements track progress & rewards, real-time updates.
+
+Chat UI flexible for multiple characters, supports moods and personalities.
+
+Wheel has cooldown timers, prize tiers, and UX animations.
+
+VIP status clearly shows benefits and upsell options.
+
+Upgrade system has clear cost/level displays, real-time effects.
+
+Unlockables grid to tease future content and show progress.
+
+Main HUD keeps energy and points visible with alerts.
+
+
+Full Structure Tree
+
+ClassikLust Game/
+├─ Core Gameplay/
+│  ├─ Tap Mechanic
+│  │  ├─ Energy system (regen, consumption)
+│  │  ├─ Points accumulation
+│  ├─ Level System
+│  │  ├─ Level progression (upgrade-based)
+│  │  ├─ Bonus unlocks
+│  └─ Upgrade Management
+│     ├─ Upgrade catalog (level gated)
+│     ├─ Purchase & apply upgrades
+│     ├─ Reset & removal
+│
+├─ Characters/
+│  ├─ Profiles
+│  │  ├─ Name, bio, avatar
+│  │  ├─ Hardcoded personality (traits, mood, triggers)
+│  │  ├─ Unlock conditions (level, event, random)
+│  │  ├─ NSFW flag & global toggle
+│  │  └─ Picture sets (level/event/VIP gated)
+│  ├─ Character Manager (Admin)
+│     ├─ CRUD characters & stats
+│     ├─ Edit personality & triggers
+│     ├─ Upload/manage avatars & images
+│
+├─ Images/
+│  ├─ Upload & assign metadata
+│  ├─ Filters: level, event, VIP, NSFW
+│  ├─ Gallery with sorting
+│  └─ Access control enforcement
+│
+├─ AI Chat System/
+│  ├─ Hardcoded personalities + triggers
+│  ├─ Use OpenAI/Gemini API with fallback to hardcoded
+│  ├─ Chat log persistence
+│  ├─ Chat delays & moods
+│  └─ Admin toggle & clear logs
+│
+├─ Mini-Games/
+│  └─ Spin Wheel
+│     ├─ Prize pool with rarity & types
+│     ├─ Cooldown tracking
+│     └─ Reward application
+│
+├─ Events & Boosters/
+│  ├─ Time-limited content
+│  ├─ Participation tracking
+│  ├─ Booster activation & duration
+│  └─ Scheduling & automatic enable/disable
+│
+├─ VIP System/
+│  ├─ VIP tiers per user
+│  ├─ Exclusive content gating
+│  └─ VIP upgrades & boosters
+│
+├─ UI & Theme Control/
+│  ├─ Theme editor (colors, fonts, layout)
+│  ├─ Text content localization/editor
+│  └─ Icon & layout drag-drop + JSON storage
+│
+├─ Admin Panel/
+│  ├─ CRUD for users, characters, images, upgrades, prizes
+│  ├─ Logs: admin actions, errors, login attempts
+│  ├─ Role-based access control (only admin users)
+│  └─ Debug & error tools
+│
+└─ Auth/
+   ├─ Standard username/password + JWT
+   ├─ Optional Telegram account linking (non-
+
+---
+
+MAIN GUI DESCRIPTION LAYOUT 
+
+ * Top-Left Block: Start with a rounded red block with the characters avatar and a settings icon right in the bottom corner of the avatar. Right next to that , put white text for "Level: 1/10." Right next to that, center the white text "PLAYER TELEGRAM NAME.". Directly below those 2 things, small heart icon and the text LP (Lust Points) 1500
+ * Top-Right Block: Put the text in white "LP per Hour (lust points per hour)" and below that the text "+1303" (the LP per Hour total from upgrades). in white. Below that, line up the currency icons: the green money icon, change to a gem icon and put in text "Lust Gems" and then then amount. The below that put a lightning bolt with the white text "Energy" followed by 1500/5500 whatever the energy level is for the player. 
+ * Event Block: A big, long, rounded red button block near the top-middle. White text centered inside it that says "EVENT NEWS."
+ * Character Block: This is the main one. Center a full-body character portrait. 
+ * Right-Side Blocks: Put a vertical menu stack here. First, a gold circular button block for "Wheel." Below that, a rectangular gold button block for "Power Up."
+ * Bottom-Left Block: A long red button block for "LevelUp." Inside, put the white text "4560" for the cost.
+ * Bottom-Center Blocks: Build a horizontal navigation bar. It needs four icon buttons: one for "Upgrade," one for "Task," one for "Shop," and one for "Chat." Each button block should have a different color icon and small white text below it.
+Tell 'em that's the whole schematic. If they can't build it with that, they ain't got the right code for the job, forreal.
+
+
+
+
+
+
+I

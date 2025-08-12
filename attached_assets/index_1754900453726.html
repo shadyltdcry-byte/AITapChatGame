@@ -1,0 +1,4633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LustClicker - Advanced Mobile Game</title>
+    <style>
+        /* Loading Screen Styles */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease;
+        }
+
+        .loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-logo {
+            width: 150px;
+            height: 150px;
+            margin-bottom: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(255, 107, 157, 0.3);
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .loading-text {
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 107, 157, 0.3);
+            border-top: 3px solid #ff6b9d;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Custom Loading Screen Styles */
+        .custom-loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: rgba(0, 0, 0, 0.9); /* Dark background */
+            backdrop-filter: blur(5px);
+            flex-direction: column;
+        }
+        .loading-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.3;
+            z-index: 0;
+        }
+        .loading-character-display {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            z-index: 1;
+            opacity: 0.6;
+        }
+        .loading-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading-logo img {
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(255, 107, 157, 0.5);
+        }
+        .loading-title {
+            font-size: 3em;
+            margin: 10px 0;
+            background: linear-gradient(135deg, #ff6b9d, #f59e0b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+        }
+        .loading-subtitle {
+            font-size: 1.2em;
+            opacity: 0.8;
+            margin-bottom: 30px;
+        }
+        .loading-progress {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            width: 300px;
+            margin: 0 auto;
+        }
+        .loading-bar {
+            flex-grow: 1;
+            height: 15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        .loading-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .loading-percent {
+            font-size: 1.1em;
+            font-weight: bold;
+            min-width: 50px; /* Ensure space for 100% */
+        }
+        .loading-event-text {
+            margin-top: 20px;
+            font-size: 1.1em;
+            opacity: 0.9;
+            min-height: 1.5em; /* Prevent layout shifts */
+        }
+        .loading-character-switch {
+            position: relative;
+            z-index: 3;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.2em;
+        }
+        .character-switch-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 1.5em;
+            padding: 5px 15px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .character-switch-btn:hover {
+            background: rgba(255, 107, 157, 0.5);
+            transform: scale(1.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-color: #ffffff;
+            --text-size: 16px;
+            --text-weight: normal;
+            --bg-color: #16213e;
+            --button-color: #ff6b9d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: var(--text-color);
+            font-size: var(--text-size);
+            font-weight: var(--text-weight);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .mobile-container {
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #2d1b69 0%, #11998e 100%);
+            position: relative;
+        }
+
+        /* Header Section */
+        .game-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .character-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .character-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #ff6b9d;
+            object-fit: cover;
+        }
+
+        .character-details h3 {
+            font-size: calc(var(--text-size) * 1);
+            font-weight: var(--text-weight);
+        }
+
+        .character-details p {
+            font-size: calc(var(--text-size) * 0.75);
+            opacity: 0.8;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 15px;
+            font-size: calc(var(--text-size) * 0.75);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        /* Main Game Area */
+        .game-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-height: calc(100vh - 200px);
+        }
+
+        /* Character display styles - Full screen main focus */
+        .character-display {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-size: contain;
+            background-position: center center;
+            background-repeat: no-repeat;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 1;
+        }
+
+        .character-display.mood-happy {
+            filter: brightness(1.1) saturate(1.1);
+        }
+
+        .character-display.mood-loving {
+            filter: hue-rotate(10deg) saturate(1.2);
+        }
+
+        .character-display.mood-excited {
+            animation: gentle-pulse 3s ease-in-out infinite;
+            filter: brightness(1.05) contrast(1.05);
+        }
+
+        @keyframes gentle-pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.95;
+            }
+        }
+
+        /* Action Buttons Row */
+        .action-buttons {
+            position: fixed;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 1000;
+        }
+
+        .action-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            color: white;
+            font-size: calc(var(--text-size) * 1.25);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.4);
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255, 107, 157, 0.6);
+        }
+
+        /* Tap Button */
+        .tap-button {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            border: none;
+            color: white;
+            font-size: var(--text-size);
+            font-weight: var(--text-weight);
+            margin: 20px auto;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 100;
+        }
+
+        .tap-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Character Name Bar */
+        .character-name-bar {
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            padding: 12px 20px;
+            border-radius: 25px;
+            margin: 15px 20px;
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+            position: relative;
+            z-index: 100;
+        }
+
+        .character-name-bar::after {
+            content: '▼';
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Chat Section */
+        .chat-section {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            margin: 0 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-messages {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        .message {
+            margin: 8px 0;
+            padding: 8px 12px;
+            border-radius: 15px;
+            max-width: 80%;
+        }
+
+        .user-message {
+            background: rgba(255, 107, 157, 0.8);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .character-message {
+            background: rgba(102, 126, 234, 0.8);
+            margin-right: auto;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .send-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Bottom Energy Bar */
+        .energy-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Level Up Button */
+        .level-up-button {
+            position: fixed;
+            bottom: 80px;
+            left: 20px;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            border: none;
+            padding: 12px 20px;
+            border-radius: 15px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            text-align: center;
+            min-width: 120px;
+            z-index: 100;
+        }
+
+        .level-up-button.available {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            box-shadow: 0 4px 15px rgba(74, 222, 128, 0.4);
+        }
+
+        .level-up-button:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Character Attributes */
+        .character-attributes {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 0 20px 20px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 100;
+        }
+
+        .attribute-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .attribute-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .attribute-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 10px;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .attribute-icon {
+            font-size: 18px;
+        }
+
+        .attribute-name {
+            font-size: calc(var(--text-size) * 0.875);
+            flex: 1;
+        }
+
+        .attribute-value {
+            font-weight: var(--text-weight);
+            color: #4ade80;
+            font-size: calc(var(--text-size) * 0.875);
+        }
+
+        .energy-info {
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .upgrade-btn {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Modal Styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: calc(var(--text-size) * 1.5);
+            font-weight: var(--text-weight);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .close-btn {
+            background: #ef4444;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Settings Modal Content */
+        .settings-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+
+        .settings-section h3 {
+            margin-bottom: 15px;
+            color: #ff6b9d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .setting-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .setting-item:hover {
+            background: rgba(255, 107, 157, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Upgrade System */
+        .upgrade-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .upgrade-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .upgrade-info h4 {
+            color: #ff6b9d;
+            margin-bottom: 5px;
+        }
+
+        .upgrade-info p {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+
+        .upgrade-button {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .upgrade-button:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+
+        /* Character Management */
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+        }
+
+        .character-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .character-card.selected {
+            border-color: #ff6b9d;
+            background: rgba(255, 107, 157, 0.2);
+        }
+
+        .character-card img {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        /* Image Management */
+        .image-upload-area {
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .image-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+
+        .image-controls {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .image-btn {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            border: none;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Spin Wheel */
+        .spin-wheel {
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
+            background: conic-gradient(
+                #ff6b9d 0deg 45deg,
+                #4ade80 45deg 90deg,
+                #3b82f6 90deg 135deg,
+                #f59e0b 135deg 180deg,
+                #8b5cf6 180deg 225deg,
+                #ef4444 225deg 270deg,
+                #06b6d4 270deg 315deg,
+                #6b7280 315deg 360deg
+            );
+            border: 8px solid #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .spin-wheel::before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 30px solid #ff6b9d;
+            z-index: 10;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .spin-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            border: 4px solid white;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .login-title {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #ff6b9d, #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .login-form {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-input {
+            width: 250px;
+            padding: 15px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        /* Theme Editor Customization */
+        .theme-editor-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        .theme-editor-section h3 {
+            margin-bottom: 15px;
+            color: #ff6b9d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .theme-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .theme-control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .theme-control-item label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .theme-control-item input[type="color"],
+        .theme-control-item input[type="range"],
+        .theme-control-item select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .theme-control-item input[type="range"] {
+            cursor: pointer;
+        }
+        .theme-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Layout Customization */
+        .layout-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        .layout-section h4 {
+            margin-bottom: 15px;
+            color: #4ade80;
+            font-size: 16px;
+        }
+        .layout-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .size-control {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .size-control label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        .size-control input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .size-display {
+            font-size: 10px;
+            text-align: center;
+            opacity: 0.6;
+        }
+        .preset-buttons {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .preset-btn:hover {
+            background: rgba(255, 107, 157, 0.3);
+        }
+
+        /* Character Creation */
+        .character-creation-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        .character-creation-section h3 {
+            margin-bottom: 15px;
+            color: #ff6b9d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .creation-input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .creation-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .attribute-sliders .slider-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .attribute-sliders label {
+            flex: 1;
+            font-size: 14px;
+        }
+        .attribute-sliders input[type="range"] {
+            width: 100px;
+            cursor: pointer;
+        }
+        .creation-btn {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        .creation-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .personality-checkboxes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .personality-checkboxes .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .personality-checkboxes .checkbox-item:hover {
+            background: rgba(255, 107, 157, 0.3);
+        }
+
+        .personality-checkboxes input[type="checkbox"] {
+            accent-color: #ff6b9d;
+        }
+
+        /* New styles for advanced creation */
+        .creation-subtitle {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="file"],
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        .form-group input[type="file"] {
+            padding: 8px;
+        }
+        .form-group textarea {
+            resize: vertical;
+        }
+        .personality-radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .radio-item:hover {
+            background: rgba(255, 107, 157, 0.3);
+        }
+        .radio-item input[type="radio"] {
+            accent-color: #ff6b9d;
+        }
+        .advanced-modal .modal-content {
+            max-width: 600px;
+            width: 90%;
+        }
+        .advanced-tabs {
+            display: flex;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+        .tab-btn {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .tab-btn.active {
+            color: white;
+            border-bottom: 3px solid #ff6b9d;
+        }
+        .tab-btn:hover:not(.active) {
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .custom-attributes, .trigger-list, .special-features {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        .custom-attributes h4, .trigger-list h4, .special-features h4 {
+            color: #ff6b9d;
+            margin-bottom: 10px;
+        }
+        .attribute-item, .trigger-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        .attr-name, .attr-value, .trigger-word, .trigger-response {
+            flex: 1;
+            padding: 8px;
+        }
+        .attr-value {
+            max-width: 80px;
+        }
+        .add-btn {
+            background: linear-gradient(135deg, #4ade80, #22c55e);
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .remove-btn {
+            background-color: #ef4444;
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .creation-btn.secondary {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+        .image-preview-item {
+            position: relative;
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        .image-preview-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .image-preview-item .remove-img {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Changelog */
+        .changelog-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        .changelog-section h3 {
+            margin-bottom: 15px;
+            color: #ff6b9d;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .changelog-entry {
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .changelog-entry:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        .changelog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .changelog-date {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        .changelog-type {
+            background: rgba(255, 107, 157, 0.2);
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        .changelog-type.achievement {
+            background: #ffd700;
+            color: #000;
+        }
+        .changelog-type.addition {
+            background: #4CAF50;
+            color: #fff;
+        }
+        .changelog-type.creation {
+            background: #2196F3;
+            color: #fff;
+        }
+        .changelog-type.upgrade {
+            background: #ff9800;
+            color: #fff;
+        }
+        .changelog-type.modification {
+            background: #9c27b0;
+            color: #fff;
+        }
+        .changelog-description {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* VIP Modal Styles */
+        .modal-content .close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: #fff;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .modal-content .close:hover,
+        .modal-content .close:focus {
+            color: #ccc;
+            text-decoration: none;
+        }
+        .modal-content h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ff6b9d;
+            margin-bottom: 20px;
+        }
+        .vip-content {
+            text-align: center;
+        }
+        .vip-feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #ffd700;
+        }
+
+        /* Changelog Styles */
+        .changelog-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .changelog-filter-tabs {
+            display: flex;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .filter-tab {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #ff6b9d, #c44569);
+            color: white;
+        }
+
+        .filter-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .changelog-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .changelog-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .changelog-entry {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            border-left: 4px solid #ff6b9d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .changelog-entry:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .changelog-entry.expanded {
+            background: rgba(255, 107, 157, 0.1);
+        }
+
+        .changelog-entry.hidden {
+            display: none;
+        }
+
+        .changelog-expand-icon {
+            float: right;
+            transition: transform 0.3s ease;
+            opacity: 0.7;
+        }
+
+        .changelog-entry.expanded .changelog-expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .changelog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .changelog-type {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .changelog-date {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .changelog-entry h4 {
+            margin: 0 0 8px 0;
+            color: #ff6b9d;
+        }
+
+        .changelog-entry p {
+            margin: 0 0 10px 0;
+            line-height: 1.4;
+        }
+
+        .changelog-details {
+            font-size: 12px;
+            opacity: 0.8;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+            white-space: pre-line;
+        }
+
+        .no-changelog {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.7;
+        }
+
+        .no-changelog h3 {
+            margin-bottom: 10px;
+            color: #ff6b9d;
+        }
+
+
+        /* Responsive Design */
+        @media (max-width: 480px) {
+            .character-image {
+                width: 240px;
+                height: 300px;
+            }
+
+            .modal-content {
+                padding: 20px;
+                max-width: 95%;
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+            .theme-controls, .character-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .loading-progress {
+                width: 250px;
+            }
+            .loading-title {
+                font-size: 2em;
+            }
+            .loading-subtitle {
+                font-size: 1em;
+            }
+            .loading-character-switch {
+                flex-direction: column;
+            }
+            .loading-event-text {
+                font-size: 1em;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .visible { display: block !important; }
+        .flex { display: flex !important; }
+        .text-center { text-align: center; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mb-4 { margin-bottom: 1rem; }
+        .p-4 { padding: 1rem; }
+
+        /* Modal Close Button for Character Creation */
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: #fff;
+            font-size: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+        }
+        .close-modal:hover, .close-modal:focus {
+            color: #ccc;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <img src="generated-icon.png" alt="LustClicker Logo" class="loading-logo">
+        <div class="loading-text">LustClicker</div>
+        <div class="loading-spinner"></div>
+        <div class="loading-subtitle">Loading your experience...</div>
+    </div>
+
+    <!-- Custom Loading Screen -->
+    <div id="customLoadingScreen" class="custom-loading-screen" style="display: none;">
+        <div class="loading-background" id="loadingBackground"></div>
+        <div class="loading-character-display" id="loadingCharacterDisplay"></div>
+        <div class="loading-content">
+            <div class="loading-logo" id="loadingLogo">
+                <img src="/generated-icon.png" alt="ClassikLust" style="width: 120px; height: 120px; border-radius: 50%;">
+            </div>
+            <h1 class="loading-title">ClassikLust</h1>
+            <div class="loading-subtitle" id="loadingSubtitle">Preparing your experience...</div>
+            <div class="loading-progress">
+                <div class="loading-bar">
+                    <div class="loading-fill" id="loadingFill"></div>
+                </div>
+                <div class="loading-percent" id="loadingPercent">0%</div>
+            </div>
+            <div class="loading-event-text" id="loadingEventText">Welcome to ClassikLust!</div>
+        </div>
+        <div class="loading-character-switch">
+            <button class="character-switch-btn" onclick="switchLoadingCharacter(-1)">◀</button>
+            <span id="loadingCharacterName">Katie</span>
+            <button class="character-switch-btn" onclick="switchLoadingCharacter(1)">▶</button>
+        </div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="login-screen">
+        <div class="login-container">
+            <h1 class="login-title">ClassikLust</h1>
+            <div class="login-form">
+                <input type="text" id="userIdInput" class="login-input" placeholder="Enter your User ID">
+                <br>
+                <button class="login-btn" onclick="loginUser()">Login</button>
+                <br>
+                <div style="margin-top: 20px; font-size: 14px; opacity: 0.7;">
+                    New? Your ID will be created automatically
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Game Interface -->
+    <div id="gameInterface" class="mobile-container hidden">
+        <!-- Header -->
+        <div class="game-header">
+            <div class="character-info">
+                <img id="headerAvatar" src="" alt="Character" class="character-avatar" style="display: none;">
+                <div class="character-details">
+                    <h3 id="headerCharacterName">Katie</h3>
+                    <p>Total: <span id="headerPoints">3325</span> 💦</p>
+                </div>
+            </div>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div id="hourlyRate">81/hr</div>
+                    <small>Per Hour</small>
+                </div>
+                <div class="stat-item">
+                    <div id="lustBucks">$0</div>
+                    <small>Lust Bucks</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn" onclick="openSettingsModal()" title="Settings">⚙️</button>
+            <button class="action-btn" onclick="openUpgradesModal()" title="Upgrades">⭐</button>
+            <button class="action-btn" onclick="openCharacterManagerModal()" title="Characters">👥</button>
+            <button class="action-btn" onclick="openChatModal()" title="Chat">💬</button>
+            <button class="action-btn" onclick="openSpinWheelModal()" title="Spin Wheel">🎯</button>
+            <button class="action-btn" onclick="openReferralModal()" title="Referrals">🎁</button>
+            <button class="action-btn" onclick="openChangelogModal()" title="Changelog">📜</button>
+        </div>
+
+        <!-- Level Up Button (Bottom Left) -->
+        <div class="level-up-button" id="levelUpButton" onclick="attemptLevelUp()">
+            <div id="levelUpText">Level Up: 1000</div>
+            <div style="font-size: 12px; opacity: 0.8;">Need 5 upgrades</div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="game-content">
+            <!-- Character Display -->
+            <div id="characterDisplay" class="character-display" style="display: none;"></div>
+            <div id="noImagePlaceholder" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; z-index: 1; pointer-events: none;">
+                <div style="text-align: center; opacity: 0.3;">
+                    <div style="font-size: 80px; margin-bottom: 20px;">👤</div>
+                    <div style="font-size: 24px;">No character image</div>
+                    <div style="font-size: 14px; margin-top: 10px;">Upload one in settings</div>
+                </div>
+            </div>
+
+            <!-- Tap Button -->
+            <button class="tap-button pulse" onclick="handleTap()">
+                💦 TAP 💦
+            </button>
+
+            <!-- Character Name Bar -->
+            <div class="character-name-bar" onclick="openCharacterManagerModal()">
+                <span id="characterNameDisplay">Katie</span>
+                <span style="float: right;">Lv <span id="characterLevel">1</span></span>
+            </div>
+
+            <!-- Character Attributes -->
+            <div class="character-attributes">
+                <div class="attribute-row">
+                    <div class="attribute-item">
+                        <span class="attribute-icon">💪</span>
+                        <span class="attribute-name">Strength</span>
+                        <span class="attribute-value" id="strengthValue">10</span>
+                    </div>
+                    <div class="attribute-item">
+                        <span class="attribute-icon">✨</span>
+                        <span class="attribute-name">Charm</span>
+                        <span class="attribute-value" id="charmValue">15</span>
+                    </div>
+                </div>
+                <div class="attribute-row">
+                    <div class="attribute-item">
+                        <span class="attribute-icon">🧠</span>
+                        <span class="attribute-name">Intelligence</span>
+                        <span class="attribute-value" id="intelligenceValue">12</span>
+                    </div>
+                    <div class="attribute-item">
+                        <span class="attribute-icon">❤️</span>
+                        <span class="attribute-name">Affection</span>
+                        <span class="attribute-value" id="affectionValue">8</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Energy Bar -->
+        <div class="energy-bar">
+            <div class="energy-info">
+                <span id="energyDisplay">2500/1500</span> Energy
+            </div>
+            <button class="upgrade-btn" onclick="openUpgradesModal()">🔋 Upgrade</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">⚙️ Game Settings</h2>
+                <button class="close-btn" onclick="closeModal('settingsModal')">×</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>🎨 Layout & Design Editor</h3>
+                <div class="settings-grid">
+                    <div class="setting-item" onclick="openImageManager()">
+                        <div>📸 Images</div>
+                        <small>Manage character & background images</small>
+                    </div>
+                    <div class="setting-item" onclick="openThemeEditor()">
+                        <div>🎨 Themes</div>
+                        <small>Customize colors & layout</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>📱 Game Options</h3>
+                <div class="settings-grid">
+                    <div class="setting-item" onclick="openCharacterManagerModal()">
+                        <div>👥 Characters</div>
+                        <small>Select & unlock characters</small>
+                    </div>
+                    <div class="setting-item" onclick="openUpgradesModal()">
+                        <div>⭐ Upgrades</div>
+                        <small>Character improvements</small>
+                    </div>
+                    <div class="setting-item" onclick="openCharacterCreator()">
+                        <div>✨ Create Character</div>
+                        <small>Design your own</small>
+                    </div>
+                    <div class="setting-item" onclick="openReferralModal()">
+                        <div>🎁 Referrals</div>
+                        <small>Invite friends & earn rewards</small>
+                    </div>
+                    <div class="setting-item" onclick="logout()" style="background: rgba(239, 68, 68, 0.2);">
+                        <div>🚪 Logout</div>
+                        <small>Sign out of game</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Manager Modal -->
+    <div id="imageManagerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📸 Image Management Hub</h2>
+                <button class="close-btn" onclick="closeModal('imageManagerModal')">×</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Upload Methods</h3>
+                <div class="settings-grid">
+                    <div class="setting-item" onclick="showUrlUpload()">
+                        <div>🌐 URL</div>
+                        <small>From web link</small>
+                    </div>
+                    <div class="setting-item" onclick="showFileUpload()">
+                        <div>📁 Local Files</div>
+                        <small>From device</small>
+                    </div>
+                </div>
+
+                <div id="urlUploadSection" class="hidden" style="margin-top: 20px;">
+                    <input type="text" id="imageUrlInput" placeholder="Enter image URL..." style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                    <select id="imageTypeSelect" style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                        <option value="character">Character Image</option>
+                        <option value="background">Background Image</option>
+                    </select>
+                    <input type="text" id="imageNameInput" placeholder="Image name (optional)..." style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                    <input type="number" id="urlLevelInput" placeholder="Level (1-99, optional)" min="1" max="99" style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                    <select id="urlCharacterSelect" style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                        <option value="">Any Character</option>
+                        <option value="Default">Default</option>
+                        <option value="Katie">Katie</option>
+                        <option value="Tessa">Tessa</option>
+                        <option value="Aria">Aria</option>
+                        <option value="Luna">Luna</option>
+                    </select>
+                    <button onclick="uploadImageFromUrl()" style="background: linear-gradient(135deg, #4ade80, #22c55e); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer;">Upload Image</button>
+                </div>
+
+                <div id="fileUploadSection" class="hidden" style="margin-top: 20px;">
+                    <input type="file" id="fileInput" accept="image/*" style="margin-bottom: 10px;">
+                    <select id="fileImageTypeSelect" style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                        <option value="character">Character Image</option>
+                        <option value="background">Background Image</option>
+                    </select>
+                    <input type="number" id="fileLevelInput" placeholder="Level (1-99, optional)" min="1" max="99" style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                    <select id="fileCharacterSelect" style="width: 100%; padding: 10px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                        <option value="">Any Character</option>
+                        <option value="Default">Default</option>
+                        <option value="Katie">Katie</option>
+                        <option value="Tessa">Tessa</option>
+                        <option value="Aria">Aria</option>
+                        <option value="Luna">Luna</option>
+                    </select>
+                    <button onclick="uploadImageFromFile()" style="background: linear-gradient(135deg, #4ade80, #22c55e); border: none; padding: 10px 20px; border-radius: 10px; color: white; font-weight: bold; cursor: pointer;">Upload File</button>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>Current Images</h3>
+                <div id="currentImagesDisplay">
+                    <p>Loading images...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Upgrades Modal -->
+    <div id="upgradesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">⭐ Character Upgrades</h2>
+                <button class="close-btn" onclick="closeModal('upgradesModal')">×</button>
+            </div>
+
+            <div class="upgrade-list" id="upgradesList">
+                <!-- Upgrades will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Management Modal -->
+    <div id="characterManagerModal" class="modal">
+        <div class="modal-content character-manager-content">
+            <span class="close" onclick="closeModal('characterManagerModal')">&times;</span>
+            <h3>🌟 Character Manager</h3>
+
+            <div class="character-actions">
+                <button class="action-btn primary" onclick="openCharacterCreationModal()">
+                    ✨ Create New Character
+                </button>
+                <button class="action-btn secondary" onclick="manageCharacterImages()">
+                    📸 Manage Images
+                </button>
+                <button class="action-btn secondary" onclick="openCharacterSelectionModal()">
+                    🔄 Switch Character
+                </button>
+                <button class="action-btn secondary" onclick="openLoadingScreenModal()">
+                    🎮 Loading Screen
+                </button>
+            </div>
+
+            <div id="characterList" class="character-list">
+                <!-- Character list will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Spin Wheel Modal -->
+    <div id="spinWheelModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🎯 Spin Wheel</h2>
+                <button class="close-btn" onclick="closeModal('spinWheelModal')">×</button>
+            </div>
+
+            <div class="text-center">
+                <div class="spin-wheel" id="spinWheel">
+                    <div class="spin-center" onclick="spinWheel()">SPIN</div>
+                </div>
+                <p style="margin-top: 20px;">Click to spin and win prizes!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Modal -->
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">💬 Chat</h2>
+                <button class="close-btn" onclick="closeModal('chatModal')">×</button>
+            </div>
+
+            <div class="chat-section" style="margin: 0; background: rgba(0,0,0,0.2);">
+                <div class="chat-messages" id="chatMessages" style="max-height: 300px;">
+                    <!-- Chat messages will be populated here -->
+                </div>
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Type your message...">
+                    <button class="send-btn" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Referral System Modal -->
+    <div id="referralModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">🎁 Referral System</h2>
+                <button class="close-btn" onclick="closeModal('referralModal')">×</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Your Referral Code</h3>
+                <div id="referralCodeDisplay" style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin: 10px 0; font-family: monospace; font-size: 18px; text-align: center;">Click Generate Below</div>
+                <button onclick="generateReferralCode()" style="background: linear-gradient(135deg, #ff6b9d, #c44569); border: none; padding: 12px 24px; border-radius: 25px; color: white; font-weight: bold; cursor: pointer; width: 100%; margin: 10px 0;">Generate Referral Code</button>
+                <button id="copyReferralBtn" onclick="copyReferralCode()" style="background: linear-gradient(135deg, #4ade80, #22c55e); border: none; padding: 8px 16px; border-radius: 15px; color: white; font-weight: bold; cursor: pointer; width: 100%; display: none;">📋 Copy Code</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Use Referral Code</h3>
+                <input type="text" id="referralCodeInput" placeholder="Enter referral code" style="width: 100%; padding: 12px; border-radius: 10px; border: none; background: rgba(255,255,255,0.1); color: white; margin-bottom: 10px;">
+                <button onclick="useReferralCode()" style="background: linear-gradient(135deg, #ff6b9d, #c44569); border: none; padding: 12px 24px; border-radius: 25px; color: white; font-weight: bold; cursor: pointer; width: 100%;">Use Code</button>
+            </div>
+
+            <div class="settings-section">
+                <h3>Referral Rewards</h3>
+                <p>• Get 50 Lust Bucks for each friend who joins</p>
+                <p>• Your friend gets 25 Lust Bucks welcome bonus</p>
+                <p>• Unlock special achievements</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Editor Modal -->
+    <div id="themeEditorModal" class="modal">
+        <div class="modal-content" style="max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <h2 class="modal-title">🎨 Theme & Layout Editor</h2>
+                <button class="close-btn" onclick="closeModal('themeEditorModal')">×</button>
+            </div>
+
+            <!-- Color Customization -->
+            <div class="theme-editor-section">
+                <h3>🎨 Colors & Text</h3>
+                <div class="theme-controls">
+                    <div class="theme-control-item">
+                        <label for="textColorPicker">Text Color:</label>
+                        <input type="color" id="textColorPicker" value="#ffffff">
+                    </div>
+                    <div class="theme-control-item">
+                        <label for="textSizeSlider">Base Text Size:</label>
+                        <input type="range" id="textSizeSlider" min="10" max="30" value="16">
+                        <span class="size-display" id="textSizeDisplay">16px</span>
+                    </div>
+                    <div class="theme-control-item">
+                        <label for="textWeightSelect">Text Weight:</label>
+                        <select id="textWeightSelect">
+                            <option value="normal">Normal</option>
+                            <option value="bold">Bold</option>
+                            <option value="lighter">Lighter</option>
+                        </select>
+                    </div>
+                    <div class="theme-control-item">
+                        <label for="backgroundColorPicker">Background Color:</label>
+                        <input type="color" id="backgroundColorPicker" value="#16213e">
+                    </div>
+                    <div class="theme-control-item">
+                        <label for="buttonColorPicker">Button Color:</label>
+                        <input type="color" id="buttonColorPicker" value="#ff6b9d">
+                    </div>
+                    <div class="theme-control-item">
+                        <label for="iconStyleSelect">Icon Style:</label>
+                        <select id="iconStyleSelect">
+                            <option value="text-only">Text Only</option>
+                            <option value="icon-only">Icon Only</option>
+                            <option value="both">Icon & Text</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Layout Customization -->
+            <div class="layout-section">
+                <h4>📏 Character Image</h4>
+                <div class="layout-controls">
+                    <div class="size-control">
+                        <label>Width:</label>
+                        <input type="range" id="charImageWidth" min="200" max="400" value="280" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="charImageWidthDisplay">280px</span>
+                    </div>
+                    <div class="size-control">
+                        <label>Height:</label>
+                        <input type="range" id="charImageHeight" min="250" max="500" value="350" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="charImageHeightDisplay">350px</span>
+                    </div>
+                </div>
+                <div class="preset-buttons">
+                    <button class="preset-btn" onclick="setImagePreset('small')">Small</button>
+                    <button class="preset-btn" onclick="setImagePreset('medium')">Medium</button>
+                    <button class="preset-btn" onclick="setImagePreset('large')">Large</button>
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h4>🔘 Tap Button</h4>
+                <div class="layout-controls">
+                    <div class="size-control">
+                        <label>Size:</label>
+                        <input type="range" id="tapButtonSize" min="80" max="160" value="120" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="tapButtonSizeDisplay">120px</span>
+                    </div>
+                    <div class="size-control">
+                        <label>Font Size:</label>
+                        <input type="range" id="tapButtonFont" min="12" max="24" value="16" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="tapButtonFontDisplay">16px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h4>🎯 Action Buttons</h4>
+                <div class="layout-controls">
+                    <div class="size-control">
+                        <label>Button Size:</label>
+                        <input type="range" id="actionButtonSize" min="40" max="70" value="50" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="actionButtonSizeDisplay">50px</span>
+                    </div>
+                    <div class="size-control">
+                        <label>Font Size:</label>
+                        <input type="range" id="actionButtonFont" min="16" max="28" value="20" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="actionButtonFontDisplay">20px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h4>📊 Attribute Panels</h4>
+                <div class="layout-controls">
+                    <div class="size-control">
+                        <label>Panel Height:</label>
+                        <input type="range" id="attrPanelHeight" min="40" max="80" value="60" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="attrPanelHeightDisplay">60px</span>
+                    </div>
+                    <div class="size-control">
+                        <label>Text Size:</label>
+                        <input type="range" id="attrTextSize" min="12" max="18" value="14" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="attrTextSizeDisplay">14px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h4>📱 Header</h4>
+                <div class="layout-controls">
+                    <div class="size-control">
+                        <label>Header Height:</label>
+                        <input type="range" id="headerHeight" min="60" max="120" value="80" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="headerHeightDisplay">80px</span>
+                    </div>
+                    <div class="size-control">
+                        <label>Avatar Size:</label>
+                        <input type="range" id="headerAvatarSize" min="30" max="60" value="40" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="headerAvatarSizeDisplay">40px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout-section">
+                <h4>⚡ Energy Bar</h4>
+                <div class="layout-controls">
+                    <div class="size-control">
+                        <label>Bar Height:</label>
+                        <input type="range" id="energyBarHeight" min="50" max="100" value="70" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="energyBarHeightDisplay">70px</span>
+                    </div>
+                    <div class="size-control">
+                        <label>Text Size:</label>
+                        <input type="range" id="energyTextSize" min="12" max="20" value="16" oninput="updateLayoutPreview()">
+                        <span class="size-display" id="energyTextSizeDisplay">16px</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theme-buttons">
+                <button class="preset-btn" onclick="resetToDefaults()">Reset to Defaults</button>
+                <button onclick="saveThemeSettings()" class="creation-btn">Save All Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Creation Modal - Basic -->
+        <div id="characterCreationModal" class="modal">
+            <div class="modal-content">
+                <span class="close-modal" onclick="closeCharacterCreation()">&times;</span>
+                <h2>Create New Character</h2>
+                <div class="creation-subtitle">Design your perfect companion</div>
+
+                <div class="form-group">
+                    <label>Character Name *</label>
+                    <input type="text" id="characterName" placeholder="Enter character name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Age</label>
+                    <input type="number" id="characterAge" placeholder="18" min="18" max="99" value="22">
+                    <div style="font-size: 11px; opacity: 0.6; margin-top: 2px;">Characters must be 18+</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="characterDescription" placeholder="Describe your character's appearance and personality"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Occupation</label>
+                    <input type="text" id="characterOccupation" placeholder="e.g., Student, Artist, Teacher">
+                </div>
+
+                <div class="form-group">
+                    <label>Personality Traits</label>
+                    <div class="personality-checkboxes" id="personalityCheckboxes">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="sweet" value="sweet">
+                            <label for="sweet">Sweet</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="flirty" value="flirty">
+                            <label for="flirty">Flirty</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="playful" value="playful">
+                            <label for="playful">Playful</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="mysterious" value="mysterious">
+                            <label for="mysterious">Mysterious</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="confident" value="confident">
+                            <label for="confident">Confident</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="shy" value="shy">
+                            <label for="shy">Shy</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Character Images</label>
+                    <input type="file" id="characterImageInput" accept="image/*" multiple>
+                    <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                        Upload multiple images - they'll be randomly selected during interactions
+                    </div>
+                    <div id="imagePreviewContainer" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Content Rating</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="nsfwContent">
+                            <label for="nsfwContent">⚠️ NSFW Content Warning</label>
+                        </div>
+                        <div style="font-size: 11px; opacity: 0.6;">
+                            Check this if your character contains adult content. NSFW characters may have special unlock conditions and rewards.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Rarity & Unlock</label>
+                    <select id="characterRarity">
+                        <option value="common">Common (Free)</option>
+                        <option value="rare">Rare (100 points)</option>
+                        <option value="epic">Epic (500 points)</option>
+                        <option value="legendary">Legendary (1000 points)</option>
+                        <option value="mythic">Mythic (2500 points)</option>
+                    </select>
+                    <div style="font-size: 11px; opacity: 0.6; margin-top: 5px;">
+                        Higher rarity characters have better rewards and special features
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Special Attributes (Optional)</label>
+                    <div id="specialAttributesContainer">
+                        <button type="button" onclick="addSpecialAttribute()" style="background: rgba(255,107,157,0.3); border: none; padding: 8px 15px; border-radius: 10px; color: white; cursor: pointer; margin-bottom: 10px;">+ Add Attribute</button>
+                        <div id="attributesList"></div>
+                    </div>
+                </div>
+
+                <button class="creation-btn" onclick="createCharacter()">Create Character</button>
+            </div>
+        </div>
+
+        <!-- Advanced Character Creation Modal -->
+        <div id="advancedCharacterModal" class="modal">
+            <div class="modal-content advanced-modal">
+                <span class="close" onclick="closeAdvancedCreationModal()">&times;</span>
+                <h2>🎨 Advanced Character Creation</h2>
+
+                <div class="advanced-tabs">
+                    <button class="tab-btn active" onclick="switchAdvancedTab('basic')">Basic Info</button>
+                    <button class="tab-btn" onclick="switchAdvancedTab('personality')">Personality</button>
+                    <button class="tab-btn" onclick="switchAdvancedTab('attributes')">Attributes</button>
+                    <button class="tab-btn" onclick="switchAdvancedTab('dialogue')">Dialogue</button>
+                    <button class="tab-btn" onclick="switchAdvancedTab('special')">Special</button>
+                </div>
+
+                <div id="basic-tab" class="tab-content active">
+                    <div class="form-group">
+                        <label for="adv-characterName">Character Name:</label>
+                        <input type="text" id="adv-characterName" placeholder="Enter character name" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="adv-characterDescription">Description:</label>
+                        <textarea id="adv-characterDescription" placeholder="Detailed description..." maxlength="500" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="characterAge">Age:</label>
+                        <input type="number" id="characterAge" min="18" max="99" value="22">
+                    </div>
+                    <div class="form-group">
+                        <label for="characterOccupation">Occupation:</label>
+                        <input type="text" id="characterOccupation" placeholder="e.g., Student, Artist, etc.">
+                    </div>
+                </div>
+
+                <div id="personality-tab" class="tab-content">
+                    <div class="form-group">
+                        <label>Personality Traits (Select multiple):</label>
+                        <div class="personality-checkboxes" id="advPersonalityTraits">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adv-sweet" value="sweet">
+                                <label for="adv-sweet">Sweet & Caring</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adv-flirty" value="flirty">
+                                <label for="adv-flirty">Flirty & Seductive</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adv-playful" value="playful">
+                                <label for="adv-playful">Playful & Energetic</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adv-mysterious" value="mysterious">
+                                <label for="adv-mysterious">Mysterious & Alluring</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adv-confident" value="confident">
+                                <label for="adv-confident">Confident & Bold</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="adv-shy" value="shy">
+                                <label for="adv-shy">Shy & Reserved</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="characterMood">Default Mood:</label>
+                        <select id="characterMood">
+                            <option value="neutral">Neutral</option>
+                            <option value="happy">Happy</option>
+                            <option value="excited">Excited</option>
+                            <option value="shy">Shy</option>
+                            <option value="confident">Confident</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="attributes-tab" class="tab-content">
+                    <div class="custom-attributes">
+                        <h4>Custom Attributes</h4>
+                        <div id="attributesList">
+                            <div class="attribute-item">
+                                <input type="text" placeholder="Attribute name" class="attr-name">
+                                <input type="number" placeholder="Value" min="1" max="100" class="attr-value">
+                                <button onclick="removeAttribute(this)">Remove</button>
+                            </div>
+                        </div>
+                        <button onclick="addCustomAttribute()" class="add-btn">Add Attribute</button>
+                    </div>
+                    <div class="form-group">
+                        <label for="characterLikes">Likes (comma separated):</label>
+                        <input type="text" id="characterLikes" placeholder="music, movies, games, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="characterDislikes">Dislikes (comma separated):</label>
+                        <input type="text" id="characterDislikes" placeholder="rudeness, lies, etc.">
+                    </div>
+                </div>
+
+                <div id="dialogue-tab" class="tab-content">
+                    <div class="form-group">
+                        <label for="customGreetings">Custom Greetings (one per line):</label>
+                        <textarea id="customGreetings" placeholder="Hey there, handsome! 😘&#10;Hello sweetie! 💕&#10;What's up, babe? 😊" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="customResponses">Custom Responses (one per line):</label>
+                        <textarea id="customResponses" placeholder="That's so sweet! 💕&#10;You're amazing! 😍&#10;I love talking to you! 😊" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="triggerPhrases">Special Trigger Phrases:</label>
+                        <div id="triggerList">
+                            <div class="trigger-item">
+                                <input type="text" placeholder="Trigger word/phrase" class="trigger-word">
+                                <input type="text" placeholder="Response" class="trigger-response">
+                                <button onclick="removeTrigger(this)">Remove</button>
+                            </div>
+                        </div>
+                        <button onclick="addTriggerPhrase()" class="add-btn">Add Trigger</button>
+                    </div>
+                </div>
+
+                <div id="special-tab" class="tab-content">
+                    <div class="form-group">
+                        <label for="unlockCost">Unlock Cost (points):</label>
+                        <input type="number" id="unlockCost" min="0" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="rarityLevel">Rarity Level:</label>
+                        <select id="rarityLevel">
+                            <option value="common">Common</option>
+                            <option value="uncommon">Uncommon</option>
+                            <option value="rare">Rare</option>
+                            <option value="epic">Epic</option>
+                            <option value="legendary">Legendary</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Special Features:</label>
+                        <div class="special-features">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="hasSpecialImages" value="specialImages">
+                                <label for="hasSpecialImages">Unlock special images on level up</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="hasVoice" value="voice">
+                                <label for="hasVoice">Voice responses</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="isVIP" value="vip">
+                                <label for="isVIP">VIP exclusive</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="advCharacterImage">Character Images:</label>
+                        <input type="file" id="advCharacterImage" accept="image/*" multiple onchange="previewMultipleImages(this)">
+                        <div id="advImagePreview" style="margin-top: 10px;"></div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="creation-btn" onclick="createAdvancedCharacter()">Create Character</button>
+                    <button class="creation-btn secondary" onclick="closeAdvancedCreationModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Character Editor Modal (for existing characters) -->
+        <div id="characterEditorModal" class="modal">
+            <div class="modal-content advanced-modal">
+                <span class="close" onclick="closeCharacterEditor()">&times;</span>
+                <h2>🎨 Edit Character</h2>
+                <div id="characterEditorContent">
+                    <!-- Content will be populated when editing a character -->
+                </div>
+            </div>
+        </div>
+
+    <!-- Changelog Modal -->
+    <div id="changelogModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">📜 Changelog</h2>
+                <button class="close-btn" onclick="closeModal('changelogModal')">×</button>
+            </div>
+            <div class="changelog-section">
+                <div class="changelog-controls">
+                    <div class="changelog-filter-tabs">
+                        <button class="filter-tab active" data-filter="all" onclick="setChangelogFilter('all')">All</button>
+                        <button class="filter-tab" data-filter="system" onclick="setChangelogFilter('system')">Server</button>
+                        <button class="filter-tab" data-filter="personal" onclick="setChangelogFilter('personal')">Personal</button>
+                        <button class="filter-tab" data-filter="debug" onclick="setChangelogFilter('debug')">Debug</button>
+                    </div>
+                    <div class="changelog-actions">
+                        <button class="btn" onclick="loadChangelog()">🔄 Refresh</button>
+                        <button class="btn danger" onclick="clearChangelog()">🗑️ Clear All</button>
+                    </div>
+                </div>
+                <div id="changelogList">
+                    <!-- Changelog will be loaded by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Screen Manager Modal -->
+    <div id="loadingScreenModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('loadingScreenModal')">&times;</span>
+            <h3>🎮 Loading Screen Manager</h3>
+
+            <div class="loading-screen-sections">
+                <div class="section">
+                    <h4>🖼️ Background Image</h4>
+                    <input type="file" id="loadingBgUpload" accept="image/*" onchange="uploadLoadingAsset('background')">
+                    <button class="action-btn secondary" onclick="document.getElementById('loadingBgUpload').click()">
+                        Upload Background
+                    </button>
+                </div>
+
+                <div class="section">
+                    <h4>🏷️ Logo</h4>
+                    <input type="file" id="loadingLogoUpload" accept="image/*" onchange="uploadLoadingAsset('logo')">
+                    <button class="action-btn secondary" onclick="document.getElementById('loadingLogoUpload').click()">
+                        Upload Logo
+                    </button>
+                </div>
+
+                <div class="section">
+                    <h4>📝 Event Text Messages</h4>
+                    <textarea id="eventMessages" rows="5" placeholder="Enter event messages (one per line)" style="width: 100%; padding: 10px; border-radius: 8px; border: none; background: rgba(255,255,255,0.1); color: white;"></textarea>
+                    <button class="action-btn primary" onclick="saveEventMessages()">Save Messages</button>
+                </div>
+
+                <div class="section">
+                    <h4>👥 Loading Characters</h4>
+                    <p>Characters available during loading will use your uploaded character images</p>
+                    <button class="action-btn secondary" onclick="refreshLoadingCharacters()">
+                        Refresh Character List
+                    </button>
+                </div>
+
+                <div class="section">
+                    <h4>🎬 Preview</h4>
+                    <button class="action-btn primary" onclick="previewLoadingScreen()">
+                        Preview Loading Screen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUserId = null;
+        let userData = null; // Renamed from 'currentUser' to 'userData' for consistency
+        let chatHistory = [];
+        let gameData = {}; // To store current game state for easier access
+        let allChangelogEntries = []; // To store all changelog entries
+        let currentChangelogFilter = 'all'; // Current filter for changelog
+        let isSpinning = false; // Flag for spin wheel
+
+        // Audio system
+        const audioBank = {
+            levelUp: 'sounds/levelUp.mp3',
+            tap: 'sounds/tap.mp3',
+            upgrade: 'sounds/upgrade.mp3',
+            notification: 'sounds/notification.mp3',
+            music: 'sounds/bgMusic.mp3'
+        };
+
+        let audioEnabled = true;
+        let musicEnabled = true;
+
+        function playSound(soundName, volume = 0.5) {
+            if (!audioEnabled || !audioBank[soundName]) return;
+
+            try {
+                const audio = new Audio(audioBank[soundName]);
+                audio.volume = volume;
+                audio.play().catch(e => console.log('Audio play failed:', e));
+            } catch (e) {
+                console.log('Audio error:', e);
+            }
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            showNotification(audioEnabled ? 'Audio enabled' : 'Audio disabled', 'info');
+        }
+
+        function toggleMusic() {
+            musicEnabled = !musicEnabled;
+            // TODO: Start/stop background music when implemented
+            showNotification(musicEnabled ? 'Music enabled' : 'Music disabled', 'info');
+        }
+
+        // Loading Screen Variables
+        let loadingAssets = {
+            background: null,
+            logo: '/generated-icon.png',
+            eventMessages: [
+                'Welcome to ClassikLust!',
+                'Preparing your adventure...',
+                'Loading characters...',
+                'Almost ready...',
+                'Get ready to have fun!'
+            ]
+        };
+        let loadingCharacters = [];
+        let currentLoadingCharacterIndex = 0;
+
+        // Loading Screen Functions
+        function showCustomLoadingScreen() {
+            const loadingScreen = document.getElementById('customLoadingScreen');
+            loadingScreen.style.display = 'flex';
+
+            // Apply custom background if set
+            if (loadingAssets.background) {
+                document.getElementById('loadingBackground').style.backgroundImage = `url(${loadingAssets.background})`;
+            } else {
+                document.getElementById('loadingBackground').style.backgroundImage = 'none'; // Clear if no background
+            }
+
+            // Apply custom logo if set
+            if (loadingAssets.logo) {
+                document.querySelector('#loadingLogo img').src = loadingAssets.logo;
+            }
+
+            // Start loading animation
+            animateLoading();
+        }
+
+        function hideCustomLoadingScreen() {
+            const loadingScreen = document.getElementById('customLoadingScreen');
+            if (loadingScreen) {
+                loadingScreen.style.display = 'none';
+            }
+        }
+
+        function animateLoading() {
+            let progress = 0;
+            const loadingFill = document.getElementById('loadingFill');
+            const loadingPercent = document.getElementById('loadingPercent');
+            const loadingEventText = document.getElementById('loadingEventText');
+
+            const interval = setInterval(() => {
+                progress += Math.random() * 10 + 5; // Slower progress increase
+                if (progress > 100) progress = 100;
+
+                if (loadingFill) loadingFill.style.width = progress + '%';
+                if (loadingPercent) loadingPercent.textContent = Math.floor(progress) + '%';
+
+                // Change event text at certain milestones
+                const messageIndex = Math.floor((progress / 100) * loadingAssets.eventMessages.length);
+                if (loadingEventText && loadingAssets.eventMessages[messageIndex]) {
+                    loadingEventText.textContent = loadingAssets.eventMessages[messageIndex];
+                }
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(hideCustomLoadingScreen, 1000);
+                }
+            }, 300);
+        }
+
+        function switchLoadingCharacter(direction) {
+            if (loadingCharacters.length === 0) return;
+
+            currentLoadingCharacterIndex += direction;
+            if (currentLoadingCharacterIndex >= loadingCharacters.length) {
+                currentLoadingCharacterIndex = 0;
+            } else if (currentLoadingCharacterIndex < 0) {
+                currentLoadingCharacterIndex = loadingCharacters.length - 1;
+            }
+
+            const character = loadingCharacters[currentLoadingCharacterIndex];
+            document.getElementById('loadingCharacterName').textContent = character.name;
+
+            const loadingCharDisplay = document.getElementById('loadingCharacterDisplay');
+            if (character.image && loadingCharDisplay) {
+                loadingCharDisplay.style.backgroundImage = `url(${character.image})`;
+            } else if (loadingCharDisplay) {
+                loadingCharDisplay.style.backgroundImage = 'none'; // Clear if no image
+            }
+        }
+
+        function openLoadingScreenModal() {
+            const modal = document.getElementById('loadingScreenModal');
+            if (modal) modal.style.display = 'block';
+            loadSavedEventMessages();
+        }
+
+        function uploadLoadingAsset(type) {
+            const input = type === 'background' ?
+                document.getElementById('loadingBgUpload') :
+                document.getElementById('loadingLogoUpload');
+
+            const file = input.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('userId', currentUserId);
+            formData.append('imageType', 'loading_' + type);
+            formData.append('imageName', `Loading ${type.charAt(0).toUpperCase() + type.slice(1)}`);
+
+            fetch('/upload-local-image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.images && data.images.length > 0) {
+                    loadingAssets[type] = data.images[data.images.length - 1].url;
+                    showNotification(`Loading ${type} uploaded successfully!`);
+
+                    // Save to localStorage
+                    localStorage.setItem('loadingAssets', JSON.stringify(loadingAssets));
+                } else {
+                    showNotification('Upload failed: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                showNotification('Upload failed', 'error');
+            });
+        }
+
+        function saveEventMessages() {
+            const messages = document.getElementById('eventMessages').value
+                .split('\n')
+                .filter(msg => msg.trim().length > 0);
+
+            if (messages.length > 0) {
+                loadingAssets.eventMessages = messages;
+                localStorage.setItem('loadingAssets', JSON.stringify(loadingAssets));
+                showNotification('Event messages saved!');
+            }
+        }
+
+        function loadSavedEventMessages() {
+            const savedAssets = localStorage.getItem('loadingAssets');
+            if (savedAssets) {
+                loadingAssets = { ...loadingAssets, ...JSON.parse(savedAssets) };
+                const eventMessagesInput = document.getElementById('eventMessages');
+                if (eventMessagesInput) {
+                    eventMessagesInput.value = loadingAssets.eventMessages.join('\n');
+                }
+            }
+        }
+
+        function refreshLoadingCharacters() {
+            if (userData && userData.characterImages) {
+                loadingCharacters = userData.characterImages.map(img => ({
+                    name: img.character || img.name || 'Unnamed', // Ensure name exists
+                    image: img.url
+                }));
+
+                // Add default characters if no custom ones or if they are empty
+                if (loadingCharacters.length === 0 || loadingCharacters.every(char => !char.image)) {
+                    loadingCharacters = [
+                        { name: 'Katie', image: '/generated-icon.png' },
+                        { name: 'Default', image: '/generated-icon.png' }
+                    ];
+                }
+
+                currentLoadingCharacterIndex = 0;
+                const characterNameSpan = document.getElementById('loadingCharacterName');
+                if (characterNameSpan) {
+                    characterNameSpan.textContent = loadingCharacters.length > 0 ? loadingCharacters[0].name : 'No Character';
+                }
+                showNotification(`${loadingCharacters.length} characters available for loading screen`);
+            }
+        }
+
+        function previewLoadingScreen() {
+            closeModal('loadingScreenModal');
+            refreshLoadingCharacters();
+            showCustomLoadingScreen();
+        }
+
+        // Initialize game
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+
+            // Load saved theme or apply default
+            const savedTheme = localStorage.getItem('themeSettings');
+            if (savedTheme) {
+                gameData.theme_settings = JSON.parse(savedTheme);
+                applyTheme(gameData.theme_settings);
+            } else {
+                applyDefaultTheme();
+            }
+
+            // Auto-login check
+            const urlParams = new URLSearchParams(window.location.search);
+            const autoAuthId = urlParams.get('autoAuth');
+
+            // Load saved loading assets
+            const savedAssets = localStorage.getItem('loadingAssets');
+            if (savedAssets) {
+                loadingAssets = { ...loadingAssets, ...JSON.parse(savedAssets) };
+            }
+
+            if (autoAuthId) {
+                console.log('Auto-auth detected for user:', autoAuthId);
+                currentUserId = autoAuthId;
+                localStorage.setItem('userId', autoAuthId); // Ensure userId is set
+                showCustomLoadingScreen();
+                autoLogin(autoAuthId);
+            } else {
+                checkSavedUser();
+            }
+        });
+
+        function setupEventListeners() {
+            // Enter key for login
+            const userIdInput = document.getElementById('userIdInput');
+            if (userIdInput) {
+                userIdInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') loginUser();
+                });
+            }
+
+            // Enter key for chat
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') sendChatMessage();
+                });
+            }
+
+            // Theme editor slider event listeners
+            const textSizeSlider = document.getElementById('textSizeSlider');
+            if (textSizeSlider) {
+                textSizeSlider.addEventListener('input', updateTextSizeDisplay);
+            }
+
+            // Layout preview updates
+            const layoutElements = [
+                'charImageWidth', 'charImageHeight', 'tapButtonSize', 'tapButtonFont',
+                'actionButtonSize', 'actionButtonFont', 'attrPanelHeight', 'attrTextSize',
+                'headerHeight', 'headerAvatarSize', 'energyBarHeight', 'energyTextSize'
+            ];
+            layoutElements.forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.addEventListener('input', updateLayoutPreview);
+                }
+            });
+        }
+
+        function showLoadingScreen() { // This function is now redundant with showCustomLoadingScreen
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loginScreen = document.getElementById('loginScreen');
+            const gameInterface = document.getElementById('gameInterface');
+
+            if (loadingScreen) loadingScreen.style.display = 'flex';
+            if (loginScreen) loginScreen.classList.add('hidden');
+            if (gameInterface) gameInterface.classList.add('hidden');
+        }
+
+        function hideLoadingScreen() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                loadingScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500);
+            }
+        }
+
+        function autoLogin(userId) {
+            persistUserSession(userId);
+
+            fetch(`/user/${userId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        userData = data.userData;
+                        loadGameData(); // Load game data after successful fetch
+                        hideCustomLoadingScreen();
+                        showGameInterface();
+                        addChangelogEntry('Auto Login', 'system', 'Automatic login successful.', `User ID: ${currentUserId}`);
+                    } else {
+                        console.log('Auto-login failed, showing login screen');
+                        localStorage.removeItem('userId'); // Clear invalid session
+                        hideCustomLoadingScreen();
+                        showLoginScreen();
+                    }
+                })
+                .catch(error => {
+                    console.error('Auto-login error:', error);
+                    localStorage.removeItem('userId'); // Clear invalid session
+                    hideCustomLoadingScreen();
+                    showLoginScreen();
+                });
+        }
+
+        function showGameInterface() {
+            const loginScreen = document.getElementById('loginScreen');
+            const gameInterface = document.getElementById('gameInterface');
+            if (loginScreen) loginScreen.classList.add('hidden');
+            if (gameInterface) gameInterface.classList.remove('hidden');
+        }
+
+        function persistUserSession(userId) {
+            currentUserId = userId;
+            localStorage.setItem('userId', userId);
+            // Clear URL params to prevent confusion
+            if (window.history && window.history.replaceState) {
+                const url = new URL(window.location);
+                url.searchParams.delete('autoAuth');
+                window.history.replaceState({}, document.title, url.toString());
+            }
+        }
+
+        function loginUser() {
+            const userId = document.getElementById('userIdInput').value.trim();
+            if (!userId) {
+                showNotification('Please enter a User ID', 'error');
+                return;
+            }
+
+            currentUserId = userId;
+            localStorage.setItem('userId', userId);
+            hideLoginScreen();
+            showCustomLoadingScreen();
+            autoLogin(userId); // Use autoLogin to handle data loading and UI transitions
+        }
+
+        function hideLoginScreen() {
+            const loginScreen = document.getElementById('loginScreen');
+            if (loginScreen) loginScreen.classList.add('hidden');
+        }
+
+        function autoLogin(userId) { // This function is called by both window.load and loginUser
+             persistUserSession(userId);
+
+             fetch(`/user/${userId}`)
+                 .then(response => response.json())
+                 .then(data => {
+                     if (data.success) {
+                         userData = data.userData;
+                         loadGameData(); // Load game data after successful fetch
+                         hideCustomLoadingScreen();
+                         showGameInterface();
+                         addChangelogEntry('Auto Login', 'system', 'Automatic login successful.', `User ID: ${currentUserId}`);
+                     } else {
+                         console.log('Auto-login failed, showing login screen');
+                         localStorage.removeItem('userId'); // Clear invalid session
+                         hideCustomLoadingScreen();
+                         showLoginScreen();
+                     }
+                 })
+                 .catch(error => {
+                     console.error('Auto-login error:', error);
+                     localStorage.removeItem('userId'); // Clear invalid session
+                     hideCustomLoadingScreen();
+                     showLoginScreen();
+                 });
+         }
+
+        function checkSavedUser() {
+            const savedUserId = localStorage.getItem('userId');
+            if (savedUserId && savedUserId !== 'null' && savedUserId !== 'undefined') {
+                console.log('Found saved user ID:', savedUserId);
+                currentUserId = savedUserId;
+                showCustomLoadingScreen();
+                autoLogin(savedUserId);
+            } else {
+                showLoginScreen();
+            }
+        }
+
+        function showLoginScreen() {
+            const loginScreen = document.getElementById('loginScreen');
+            const gameInterface = document.getElementById('gameInterface');
+            const loadingScreen = document.getElementById('customLoadingScreen');
+
+            if (loginScreen) loginScreen.classList.remove('hidden');
+            if (gameInterface) gameInterface.classList.add('hidden');
+            if (loadingScreen) loadingScreen.style.display = 'none'; // Ensure custom loading screen is hidden
+        }
+
+        function loadGameData() {
+            if (!userData) return;
+
+            // Update global gameData state
+            gameData.points = userData.points || 0;
+            gameData.energy = userData.energy || 0;
+            gameData.maxEnergy = userData.max_energy || 1500;
+            gameData.character_name = userData.character_name || 'Default';
+            gameData.character_level = userData.character_level || 1;
+            gameData.hourly_lust = userData.hourly_lust || 10;
+            gameData.lust_bucks = userData.lust_bucks || 0;
+            gameData.upgrades = userData.upgrades || {};
+            gameData.attributes = userData.attributes || {};
+            gameData.characterImages = userData.characterImages || [];
+            gameData.backgrounds = userData.backgrounds || [];
+            gameData.theme_settings = userData.theme_settings || {};
+            gameData.custom_characters = userData.custom_characters || [];
+            gameData.unlockedCharacters = userData.unlockedCharacters || [];
+            gameData.nsfwTokens = userData.nsfwTokens || 0;
+
+            // Update header
+            const headerCharacterName = document.getElementById('headerCharacterName');
+            if (headerCharacterName) headerCharacterName.textContent = gameData.character_name;
+            document.getElementById('headerPoints').textContent = gameData.points;
+            document.getElementById('hourlyRate').textContent = `${gameData.hourly_lust}/hr`;
+            document.getElementById('lustBucks').textContent = `$${gameData.lust_bucks}`;
+
+            // Update character display
+            const characterNameDisplay = document.getElementById('characterNameDisplay');
+            if (characterNameDisplay) characterNameDisplay.textContent = gameData.character_name;
+            document.getElementById('characterLevel').textContent = gameData.character_level;
+
+            // Update character attributes
+            updateCharacterAttributes();
+
+            // Update level up button
+            updateLevelUpButton();
+
+            // Load character image based on current character and level
+            let bestImage = findBestImage(gameData.character_name, gameData.character_level, gameData.characterImages);
+
+            const characterDisplay = document.getElementById('characterDisplay');
+            const noImagePlaceholder = document.getElementById('noImagePlaceholder');
+            const headerAvatar = document.getElementById('headerAvatar');
+
+            if (bestImage) {
+                if (characterDisplay) {
+                    characterDisplay.style.backgroundImage = `url('${bestImage.url}')`;
+                    characterDisplay.style.display = 'block';
+                }
+                if (noImagePlaceholder) noImagePlaceholder.style.display = 'none';
+
+                // Also update header avatar
+                if (headerAvatar) {
+                    headerAvatar.src = bestImage.url;
+                    headerAvatar.style.display = 'block';
+                }
+            } else {
+                if (characterDisplay) characterDisplay.style.display = 'none';
+                if (noImagePlaceholder) noImagePlaceholder.style.display = 'flex';
+                if (headerAvatar) headerAvatar.style.display = 'none';
+            }
+
+            // Update energy
+            document.getElementById('energyDisplay').textContent = `${gameData.energy}/${gameData.maxEnergy}`;
+
+            // Load chat history
+            loadChatHistory();
+
+            // Call the updated character display function
+            updateCharacterDisplay();
+
+            // Set initial background if none exists, and adapt character
+            if (gameData.currentBackground === undefined && gameData.backgrounds && gameData.backgrounds.length > 0) {
+                setBackground(0); // Set the first background as default
+            } else if (gameData.currentBackground !== undefined && gameData.backgrounds[gameData.currentBackground]) {
+                adaptCharacterToBackground(gameData.backgrounds[gameData.currentBackground]);
+            }
+        }
+
+        function findBestImage(characterName, level, images) {
+            let bestImage = null;
+            let bestMatchScore = -1;
+
+            if (!images) return null;
+
+            images.forEach(img => {
+                let score = 0;
+                if (img.character === characterName) score += 100;
+                else if (!img.character || img.character === 'General') score += 1; // Generic
+
+                if (img.level !== undefined && img.level !== null) {
+                    if (img.level <= level) score += (img.level / level) * 50;
+                } else {
+                    score += 10; // Generic level
+                }
+
+                if (score > bestMatchScore) {
+                    bestMatchScore = score;
+                    bestImage = img;
+                }
+            });
+            return bestImage;
+        }
+
+        function updateCharacterAttributes() {
+            const attrs = gameData.attributes;
+            document.getElementById('strengthValue').textContent = attrs.strength || 10;
+            document.getElementById('charmValue').textContent = attrs.charm || 15;
+            document.getElementById('intelligenceValue').textContent = attrs.intelligence || 12;
+            document.getElementById('affectionValue').textContent = attrs.affection || 8;
+        }
+
+        function updateLevelUpButton() {
+            const button = document.getElementById('levelUpButton');
+            if (!button) return;
+
+            const currentLevel = gameData.character_level;
+            const totalUpgrades = getTotalUpgradeLevel();
+            const requiredUpgrades = currentLevel * 5;
+            const levelUpCost = currentLevel * 1000;
+
+            const canLevelUp = totalUpgrades >= requiredUpgrades && gameData.points >= levelUpCost;
+
+            button.querySelector('#levelUpText').textContent = `Level Up: ${levelUpCost}`;
+
+            if (canLevelUp) {
+                button.classList.add('available');
+                button.querySelector('div:last-child').textContent = 'Ready to level up!';
+            } else {
+                button.classList.remove('available');
+                const upgradesNeeded = Math.max(0, requiredUpgrades - totalUpgrades);
+                const pointsNeeded = Math.max(0, levelUpCost - gameData.points);
+
+                let textContent = '';
+                if (upgradesNeeded > 0 && pointsNeeded > 0) {
+                    textContent = `Need ${upgradesNeeded} upgrades & ${pointsNeeded} points`;
+                } else if (upgradesNeeded > 0) {
+                    textContent = `Need ${upgradesNeeded} more upgrades`;
+                } else if (pointsNeeded > 0) {
+                    textContent = `Need ${pointsNeeded} more points`;
+                } else {
+                    textContent = 'Requirements not met';
+                }
+                button.querySelector('div:last-child').textContent = textContent;
+            }
+        }
+
+        function getTotalUpgradeLevel() {
+            let total = 0;
+            for (const key in gameData.upgrades) {
+                total += gameData.upgrades[key] || 1;
+            }
+            return total;
+        }
+
+        function attemptLevelUp() {
+            if (!currentUserId) return;
+
+            const currentLevel = gameData.character_level;
+            const totalUpgrades = getTotalUpgradeLevel();
+            const requiredUpgrades = currentLevel * 5;
+            const levelUpCost = currentLevel * 1000;
+
+            const canLevelUp = totalUpgrades >= requiredUpgrades && gameData.points >= levelUpCost;
+
+            if (!canLevelUp) {
+                showNotification('Level up requirements not met!', 'error');
+                return;
+            }
+
+            fetch('/level-up-character', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    userData = data.userData; // Update userData
+                    loadGameData(); // Reload all data
+                    showNotification(`Level up! Now level ${data.newLevel}!`, 'success');
+                    playSound('levelUp');
+                    addChangelogEntry('Level Up', 'upgrade', `Reached Level ${data.newLevel}!`, `New Level: ${data.newLevel}\nPoints: ${gameData.points}\nUpgrades: ${totalUpgrades}`);
+                } else {
+                    showNotification(data.error || 'Level up failed', 'error');
+                }
+            });
+        }
+
+        function handleTap() {
+            if (!currentUserId) return;
+
+            fetch('/tap', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ userId: currentUserId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showNotification(data.error, 'error');
+                } else {
+                    const oldPoints = gameData.points;
+                    gameData.points = data.points;
+                    gameData.energy = data.energy;
+                    updateDisplay();
+
+                    const tapGain = data.tapGain || 5;
+                    showPointsGain(tapGain);
+                    playSound('tap', 0.3);
+
+                    if (gameData.points >= 1000 && oldPoints < 1000) {
+                        addChangelogEntry('First Milestone', 'achievement', 'Reached 1,000 Lust Points!', `Points earned: ${gameData.points}\nTap gain: ${tapGain}`);
+                    } else if (gameData.points >= 10000 && oldPoints < 10000) {
+                        addChangelogEntry('Major Milestone', 'achievement', 'Reached 10,000 Lust Points!', `Points earned: ${gameData.points}\nTap gain: ${tapGain}`);
+                    }
+                }
+            });
+        }
+
+        function updateDisplay() {
+            const headerPoints = document.getElementById('headerPoints');
+            if (headerPoints) headerPoints.textContent = gameData.points;
+            document.getElementById('energyDisplay').textContent = `${gameData.energy}/${gameData.maxEnergy}`;
+        }
+
+        function showPointsGain(amount) {
+            const gainDiv = document.createElement('div');
+            gainDiv.textContent = `+${amount} 💦`;
+            gainDiv.style.cssText = `
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #ffdd00;
+                font-size: 24px;
+                font-weight: bold;
+                opacity: 1;
+                animation: fadeInOut 1s ease-out forwards;
+            `;
+            const tapButton = document.querySelector('.tap-button');
+            if (tapButton) tapButton.appendChild(gainDiv);
+        }
+
+        function loadChatHistory() {
+            if (!currentUserId) return;
+
+            fetch(`/chat/history/${currentUserId}?limit=10`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        chatHistory = data.messages || [];
+                        displayChatMessages();
+                    }
+                });
+        }
+
+        function displayChatMessages() {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            container.innerHTML = '';
+
+            chatHistory.forEach(msg => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${msg.is_user_message ? 'user-message' : 'character-message'}`;
+                messageDiv.textContent = msg.message;
+                container.appendChild(messageDiv);
+            });
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message || !currentUserId) return;
+
+            addMessageToChat(message, true);
+            input.value = '';
+
+            fetch('/chat/send-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: currentUserId,
+                    message: message,
+                    currentMood: 'neutral', // Placeholder, can be determined by backend
+                    conversationHistory: chatHistory.slice(-5), // Last 5 messages for context
+                    characterTraits: {} // Placeholder, can be fetched
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    addMessageToChat(data.response, false);
+
+                    if (data.levelUpMessage) {
+                        addMessageToChat(data.levelUpMessage, false);
+                    }
+                    // Add a general chat action to changelog
+                    addChangelogEntry('Chat Activity', 'communication', `Sent a message: "${message.substring(0, 30)}..."`);
+
+                    // Update chat mood display with 3D effects
+                    if (data.mood && data.mood !== 'neutral') {
+                        window.currentMood = data.mood;
+                        const characterDisplay = document.getElementById('characterDisplay');
+
+                        setTimeout(() => {
+                            // Remove existing mood classes
+                            characterDisplay.classList.remove('mood-happy', 'mood-loving', 'mood-excited', 'mood-romantic', 'mood-playful');
+
+                            // Add new mood class
+                            characterDisplay.classList.add(`mood-${data.mood}`);
+
+                            // Apply mood-specific 3D effects
+                            switch(data.mood) {
+                                case 'happy':
+                                    characterDisplay.style.transform = 'perspective(1000px) rotateY(-3deg) rotateX(1deg) scale(1.02)';
+                                    break;
+                                case 'loving':
+                                    characterDisplay.style.transform = 'perspective(1000px) rotateY(-7deg) rotateX(3deg) scale(1.01)';
+                                    break;
+                                case 'excited':
+                                    characterDisplay.style.transform = 'perspective(1000px) rotateY(-2deg) rotateX(0deg) scale(1.03)';
+                                    break;
+                                case 'romantic':
+                                    characterDisplay.style.filter += ' hue-rotate(30deg) saturate(1.2)';
+                                    break;
+                            }
+
+                            setTimeout(() => {
+                                characterDisplay.style.transform = 'perspective(1000px) rotateY(-5deg) rotateX(2deg)';
+                                characterDisplay.style.filter = characterDisplay.style.filter.replace(' hue-rotate(30deg) saturate(1.2)', '');
+                            }, 3000);
+                        }, 500);
+                    }
+                }
+            });
+        }
+
+        function addMessageToChat(message, isUser) {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'character-message'}`;
+            messageDiv.textContent = message;
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+
+            chatHistory.push({
+                message: message,
+                is_user_message: isUser ? 1 : 0,
+                created_at: Date.now()
+            });
+        }
+
+        function displayCurrentImages() {
+            const container = document.getElementById('currentImagesDisplay');
+            if (!container) return;
+
+            let html = '';
+
+            const characterImages = {};
+            const backgroundImages = [];
+
+            if (gameData.characterImages && gameData.characterImages.length > 0) {
+                gameData.characterImages.forEach((img, index) => {
+                    const character = img.character || 'General';
+                    const level = img.level || 'Any Level';
+
+                    if (!characterImages[character]) characterImages[character] = {};
+                    if (!characterImages[character][level]) characterImages[character][level] = [];
+                    characterImages[character][level].push({ ...img, index });
+                });
+            }
+
+            if (gameData.backgrounds && gameData.backgrounds.length > 0) {
+                gameData.backgrounds.forEach((img, index) => {
+                    backgroundImages.push({ ...img, index });
+                });
+            }
+
+            if (Object.keys(characterImages).length > 0) {
+                html += '<h4>Character Images</h4>';
+                Object.keys(characterImages).forEach(character => {
+                    html += `<div style="margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 10px;">`;
+                    html += `<h5>${character}</h5>`;
+
+                    Object.keys(characterImages[character]).forEach(level => {
+                        html += `<div style="margin-bottom: 10px;"><strong>Level ${level}:</strong><br>`;
+                        html += `<div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">`;
+
+                        characterImages[character][level].forEach(img => {
+                            html += `
+                                <div style="position: relative; width: 100px;">
+                                    <img src="${img.url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                                    <div style="font-size: 12px; text-align: center; margin-top: 5px;">${img.name}</div>
+                                    <button onclick="deleteImage('character', ${img.index})" style="position: absolute; top: 2px; right: 2px; background: #ef4444; border: none; border-radius: 50%; width: 20px; height: 20px; color: white; font-size: 12px;">×</button>
+                                </div>
+                            `;
+                        });
+                        html += `</div></div>`;
+                    });
+                    html += `</div>`;
+                });
+            }
+
+            if (backgroundImages.length > 0) {
+                html += '<h4 style="margin-top: 20px;">Background Images</h4>';
+                html += `<div style="display: flex; gap: 10px; flex-wrap: wrap;">`;
+                backgroundImages.forEach(img => {
+                    html += `
+                        <div style="position: relative; width: 100px;">
+                            <img src="${img.url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                            <div style="font-size: 12px; text-align: center; margin-top: 5px;">${img.name}</div>
+                            <button onclick="deleteImage('background', ${img.index})" style="position: absolute; top: 2px; right: 2px; background: #ef4444; border: none; border-radius: 50%; width: 20px; height: 20px; color: white; font-size: 12px;">×</button>
+                        </div>
+                    `;
+                });
+                html += `</div>`;
+            }
+
+            if (html === '') html = '<p>No images uploaded yet.</p>';
+            container.innerHTML = html;
+        }
+
+        function deleteImage(type, index) {
+            if (!currentUserId) return;
+
+            fetch('/delete-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, imageType: type, imageIndex: index })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Image deleted successfully!', 'success');
+                    loadUserData(); // Reload user data to update gameData
+                    displayCurrentImages();
+                    addChangelogEntry('Image Management', 'modification', `Deleted a ${type} image.`);
+                } else {
+                    showNotification('Failed to delete image', 'error');
+                }
+            });
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) modal.style.display = 'none';
+        }
+
+        function openSettingsModal() { openModal('settingsModal'); }
+        function openUpgradesModal() {
+            loadUpgrades();
+            openModal('upgradesModal');
+        }
+        function openCharacterManagerModal() {
+            loadCharacters();
+            openModal('characterManagerModal');
+        }
+        function openSpinWheelModal() { openModal('spinWheelModal'); }
+        function openChatModal() { openModal('chatModal'); }
+        function openReferralModal() { openModal('referralModal'); }
+        function openImageManager() {
+            openModal('imageManagerModal');
+            displayCurrentImages();
+        }
+        function openThemeEditor() {
+            openModal('themeEditorModal');
+            loadThemeSettings();
+        }
+        function openCharacterCreationModal() {
+             document.getElementById('characterCreationModal').style.display = 'block';
+        }
+         function closeCharacterCreation() {
+            document.getElementById('characterCreationModal').style.display = 'none';
+            // Reset form fields if necessary
+            document.getElementById('characterName').value = '';
+            document.getElementById('characterAge').value = '22';
+            document.getElementById('characterDescription').value = '';
+            document.getElementById('characterOccupation').value = '';
+            document.querySelectorAll('#personalityCheckboxes input[type="checkbox"]:checked').forEach(cb => cb.checked = false);
+            document.getElementById('nsfwContent').checked = false;
+            document.getElementById('characterRarity').value = 'common';
+            document.getElementById('attributesList').innerHTML = ''; // Clear attributes
+            document.getElementById('characterImageInput').value = '';
+            document.getElementById('imagePreviewContainer').innerHTML = '';
+        }
+
+        function uploadImageFromUrl() {
+            const imageUrl = document.getElementById('imageUrlInput').value.trim();
+            const type = document.getElementById('imageTypeSelect').value;
+            const imageName = document.getElementById('imageNameInput').value.trim() || 'Uploaded Image';
+            const level = document.getElementById('urlLevelInput').value;
+            const character = document.getElementById('urlCharacterSelect').value;
+
+            if (!imageUrl) {
+                showNotification('Please enter an image URL', 'error');
+                return;
+            }
+
+            fetch('/upload-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, imageUrl, imageType: type, imageName, level, character })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Image uploaded successfully!', 'success');
+                    document.getElementById('imageUrlInput').value = '';
+                    document.getElementById('imageNameInput').value = '';
+                    document.getElementById('urlLevelInput').value = '';
+                    document.getElementById('urlCharacterSelect').value = '';
+                    loadGameData();
+                    displayCurrentImages();
+                    addChangelogEntry('Image Upload', 'addition', `Uploaded ${type} image from URL: ${imageName}`, `URL: ${imageUrl}\nType: ${type}\nLevel: ${level || 'N/A'}\nCharacter: ${character || 'N/A'}`);
+                } else {
+                    showNotification('Failed to upload image', 'error');
+                }
+            });
+        }
+
+        function uploadImageFromFile() {
+            const file = document.getElementById('fileInput').files[0];
+            const type = document.getElementById('fileImageTypeSelect').value;
+            const level = document.getElementById('fileLevelInput').value;
+            const character = document.getElementById('fileCharacterSelect').value;
+
+            if (!file) {
+                showNotification('Please select a file', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append('userId', currentUserId);
+            formData.append('imageType', type);
+            formData.append('imageName', file.name);
+            if (level) formData.append('level', level);
+            if (character) formData.append('character', character);
+
+            fetch('/upload-local-image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Image uploaded successfully!', 'success');
+                    document.getElementById('fileInput').value = '';
+                    document.getElementById('fileLevelInput').value = '';
+                    document.getElementById('fileCharacterSelect').value = '';
+                    loadGameData();
+                    displayCurrentImages();
+                    addChangelogEntry('Image Upload', 'addition', `Uploaded ${type} image: ${file.name}`, `File: ${file.name}\nType: ${type}\nLevel: ${level || 'N/A'}\nCharacter: ${character || 'N/A'}`);
+                } else {
+                    showNotification('Failed to upload image', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                showNotification('Upload failed', 'error');
+            });
+        }
+
+        function spinWheel() {
+            if (isSpinning) return;
+
+            isSpinning = true;
+            const wheel = document.getElementById('spinWheel');
+
+            // Random spin (3-6 full rotations + random angle)
+            const randomRotation = (Math.random() * 360) + (3 + Math.random() * 3) * 360;
+            wheel.style.transition = 'transform 3s cubic-bezier(0.23, 1, 0.32, 1)';
+            wheel.style.transform = `rotate(${randomRotation}deg)`;
+
+            setTimeout(() => {
+                const finalAngle = randomRotation % 360;
+                let selectedPrize = null;
+
+                // Determine which slice was selected (10 slices now, 36 degrees each)
+                const sliceAngle = 36;
+                const sliceIndex = Math.floor((360 - finalAngle + sliceAngle/2) / sliceAngle) % 10;
+
+                // Enhanced prize pool with special items
+                const prizes = [
+                    { type: 'lust', value: 100, label: '100 💦', color: '#ff6b9d' },
+                    { type: 'energy', value: 50, label: '50 ⚡', color: '#4ade80' },
+                    { type: 'specialGift', value: 'rare_image', label: '🎁 Rare Image', color: '#9c27b0' },
+                    { type: 'lustBucks', value: 10, label: '10 💎', color: '#c44569' },
+                    { type: 'lust', value: 500, label: '500 💦', color: '#ff6b9d' },
+                    { type: 'characterUnlock', value: 'random', label: '🔓 Character', color: '#ff5722' },
+                    { type: 'tapBooster', value: 0.1, label: '+10% Tap', color: '#ffa726' },
+                    { type: 'specialGift', value: 'nsfw_unlock', label: '🔞 NSFW Token', color: '#e91e63' },
+                    { type: 'lust', value: 1000, label: '1000 💦', color: '#ff6b9d' },
+                    { type: 'hourlyBooster', value: 0.1, label: '+10% Hourly', color: '#ab47bc' }
+                ];
+
+                selectedPrize = prizes[sliceIndex];
+
+                // Handle special prizes
+                if (selectedPrize.type === 'specialGift') {
+                    handleSpecialGift(selectedPrize);
+                } else if (selectedPrize.type === 'characterUnlock') {
+                    handleCharacterUnlockPrize();
+                } else {
+                    showMessage(`🎉 You won: ${selectedPrize.label}!`, 'success');
+
+                    // Award the prize
+                    fetch('/spin-wheel-prize', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: currentUserId, // Use currentUserId
+                            prize: selectedPrize,
+                            userData: userData // Pass relevant user data
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            userData = data.userData; // Update userData
+                            loadGameData(); // Reload game data
+
+                            // Add changelog entry
+                            addChangelogEntry('Spin Wheel', 'reward', `Won ${selectedPrize.label}`, `Prize Type: ${selectedPrize.type}\nValue: ${selectedPrize.value}\nWheel Spin Reward`);
+                        } else {
+                            showNotification(data.error || 'Failed to claim prize', 'error');
+                        }
+                    });
+                }
+
+                isSpinning = false;
+            }, 3000);
+        }
+
+        function handleSpecialGift(prize) {
+            if (prize.value === 'rare_image') {
+                // Award a rare character image
+                const rareImages = [
+                    'https://example.com/rare1.jpg', // Placeholder URLs
+                    'https://example.com/rare2.jpg',
+                    'https://example.com/rare3.jpg'
+                ];
+                const randomImage = rareImages[Math.floor(Math.random() * rareImages.length)];
+
+                fetch('/upload-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        imageUrl: randomImage,
+                        imageType: 'character',
+                        imageName: `Rare Gift Image ${Date.now()}`,
+                        isSpecial: true
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('🎁 You received a rare character image!', 'success');
+                        addChangelogEntry('Special Gift', 'reward', 'Received rare image from wheel', 'Type: Rare Character Image\nSource: Wheel Spin');
+                        loadUserData(); // Refresh data
+                    } else {
+                        showMessage('Failed to receive rare image.', 'error');
+                    }
+                });
+            } else if (prize.value === 'nsfw_unlock') {
+                // Award NSFW unlock token
+                if (!userData.nsfwTokens) userData.nsfwTokens = 0;
+                userData.nsfwTokens += 1;
+
+                fetch('/admin/update-user-data', { // Assuming this endpoint exists for user data updates
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        nsfwTokens: userData.nsfwTokens
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage('🔞 You received an NSFW unlock token!', 'success');
+                        addChangelogEntry('NSFW Token', 'reward', 'Received NSFW unlock token', 'Allows access to adult content features');
+                        loadUserData(); // Refresh data
+                    } else {
+                        showMessage('Failed to receive NSFW token.', 'error');
+                    }
+                });
+            }
+        }
+
+        function handleCharacterUnlockPrize() {
+            // Free character unlock for wheel winners
+            const availableCharacters = ['Katie', 'Tessa', 'Aria', 'Luna']; // Default characters
+            const unlockedChars = userData.unlockedCharacters || [];
+            const lockedChars = availableCharacters.filter(char => !unlockedChars.includes(char));
+
+            if (lockedChars.length > 0) {
+                const randomChar = lockedChars[Math.floor(Math.random() * lockedChars.length)];
+
+                fetch('/unlock-character', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        characterName: randomChar,
+                        isFree: true // Mark as free unlock
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(`🔓 You unlocked ${randomChar} for FREE!`, 'success');
+                        addChangelogEntry('Free Character Unlock', 'reward', `Unlocked ${randomChar} from wheel`, 'Source: Wheel Spin - No cost');
+                        loadUserData(); // Refresh data
+                    } else {
+                        showMessage('Failed to unlock character.', 'error');
+                    }
+                });
+            } else {
+                // All characters unlocked, give bonus points instead
+                const bonusPoints = 1000;
+                fetch('/admin/update-user-data', { // Assuming this endpoint exists for user data updates
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: currentUserId,
+                        points: userData.points + bonusPoints
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(`🎉 All characters unlocked! Bonus: +${bonusPoints} points!`, 'success');
+                        loadUserData(); // Refresh data
+                    } else {
+                        showMessage('Failed to grant bonus points.', 'error');
+                    }
+                });
+            }
+        }
+
+
+        function generateReferralCode() {
+            fetch('/generate-referral', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('referralCodeDisplay').textContent = data.referralCode;
+                    document.getElementById('copyReferralBtn').style.display = 'block';
+                    showNotification(`Referral code generated!`, 'success');
+                    addChangelogEntry('Referral', 'feature', 'Generated a referral code.');
+                } else {
+                    showNotification(data.error, 'error');
+                }
+            });
+        }
+
+        function copyReferralCode() {
+            const code = document.getElementById('referralCodeDisplay').textContent;
+            if (!code || code === 'Click Generate Below') return;
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(code).then(() => {
+                    showNotification('Referral code copied to clipboard!', 'success');
+                }).catch(err => {
+                    console.error('Failed to copy referral code: ', err);
+                    showNotification('Failed to copy code.', 'error');
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                textArea.style.position = 'fixed'; // Avoid scrolling to bottom
+                textArea.style.top = '-9999px';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showNotification('Referral code copied to clipboard!', 'success');
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                    showNotification('Failed to copy code.', 'error');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function useReferralCode() {
+            const code = document.getElementById('referralCodeInput').value.trim();
+            if (!code) {
+                showNotification('Please enter a referral code', 'warning');
+                return;
+            }
+
+            fetch('/use-referral', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, referralCode: code })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    document.getElementById('referralCodeInput').value = '';
+                    addChangelogEntry('Referral', 'feature', `Used a referral code: ${code}`, `Result: ${data.message}`);
+                    loadUserData(); // Refresh data
+                } else {
+                    showNotification(data.error, 'error');
+                }
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? '#4ade80' : type === 'error' ? '#ef4444' : type === 'warning' ? '#f59e0b' : '#3b82f6'};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                font-weight: bold;
+                z-index: 10000;
+                animation: slideIn 0.3s ease forwards;
+                opacity: 0;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Trigger animation after appending
+            requestAnimationFrame(() => {
+                notification.style.opacity = '1';
+            });
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function loadThemeSettings() {
+            const theme = gameData.theme_settings || {
+                textColor: '#ffffff',
+                textSize: '16px',
+                textWeight: 'normal',
+                backgroundColor: '#16213e',
+                buttonColor: '#ff6b9d',
+                iconStyle: 'text-only',
+                layout: {
+                    charImageWidth: 280,
+                    charImageHeight: 350,
+                    tapButtonSize: 120,
+                    tapButtonFont: 16,
+                    actionButtonSize: 50,
+                    actionButtonFont: 20,
+                    attrPanelHeight: 60,
+                    attrTextSize: 14,
+                    headerHeight: 80,
+                    headerAvatarSize: 40,
+                    energyBarHeight: 70,
+                    energyTextSize: 16
+                }
+            };
+
+            // Load color/text settings
+            document.getElementById('textColorPicker').value = theme.textColor;
+            document.getElementById('textSizeSlider').value = parseInt(theme.textSize);
+            document.getElementById('textWeightSelect').value = theme.textWeight;
+            document.getElementById('backgroundColorPicker').value = theme.backgroundColor;
+            document.getElementById('buttonColorPicker').value = theme.buttonColor;
+            document.getElementById('iconStyleSelect').value = theme.iconStyle;
+
+            // Load layout settings
+            const layout = theme.layout || {};
+            Object.keys(layout).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = layout[key];
+                    updateLayoutDisplay(key, layout[key]);
+                }
+            });
+
+            // Update text size display
+            updateTextSizeDisplay();
+        }
+
+        function updateTextSizeDisplay() {
+            const textSize = document.getElementById('textSizeSlider').value;
+            document.getElementById('textSizeDisplay').textContent = textSize + 'px';
+        }
+
+        function updateLayoutDisplay(elementId, value) {
+            const displayElement = document.getElementById(elementId + 'Display');
+            if (displayElement) {
+                displayElement.textContent = value + 'px';
+            }
+        }
+
+        function updateLayoutPreview() {
+            // Update all display values
+            const layoutElements = [
+                'charImageWidth', 'charImageHeight', 'tapButtonSize', 'tapButtonFont',
+                'actionButtonSize', 'actionButtonFont', 'attrPanelHeight', 'attrTextSize',
+                'headerHeight', 'headerAvatarSize', 'energyBarHeight', 'energyTextSize'
+            ];
+
+            layoutElements.forEach(elementId => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    updateLayoutDisplay(elementId, element.value);
+                    applyLayoutChange(elementId, element.value);
+                }
+            });
+        }
+
+        function applyLayoutChange(property, value) {
+            const val = parseInt(value);
+
+            switch(property) {
+                case 'charImageWidth':
+                    document.querySelectorAll('.character-image, #noImagePlaceholder').forEach(el => {
+                        el.style.width = val + 'px';
+                    });
+                    break;
+                case 'charImageHeight':
+                    document.querySelectorAll('.character-image, #noImagePlaceholder').forEach(el => {
+                        el.style.height = val + 'px';
+                    });
+                    break;
+                case 'tapButtonSize':
+                    document.querySelector('.tap-button').style.width = val + 'px';
+                    document.querySelector('.tap-button').style.height = val + 'px';
+                    break;
+                case 'tapButtonFont':
+                    document.querySelector('.tap-button').style.fontSize = val + 'px';
+                    break;
+                case 'actionButtonSize':
+                    document.querySelectorAll('.action-btn').forEach(el => {
+                        el.style.width = val + 'px';
+                        el.style.height = val + 'px';
+                    });
+                    break;
+                case 'actionButtonFont':
+                    document.querySelectorAll('.action-btn').forEach(el => {
+                        el.style.fontSize = val + 'px';
+                    });
+                    break;
+                case 'attrPanelHeight':
+                    document.querySelectorAll('.attribute-item').forEach(el => {
+                        el.style.height = val + 'px';
+                    });
+                    break;
+                case 'attrTextSize':
+                    document.querySelectorAll('.attribute-name, .attribute-value').forEach(el => {
+                        el.style.fontSize = val + 'px';
+                    });
+                    break;
+                case 'headerHeight':
+                    document.querySelector('.game-header').style.height = val + 'px';
+                    break;
+                case 'headerAvatarSize':
+                    document.querySelector('.character-avatar').style.width = val + 'px';
+                    document.querySelector('.character-avatar').style.height = val + 'px';
+                    break;
+                case 'energyBarHeight':
+                    document.querySelector('.energy-bar').style.height = val + 'px';
+                    break;
+                case 'energyTextSize':
+                    document.querySelectorAll('.energy-info, .upgrade-btn').forEach(el => {
+                        el.style.fontSize = val + 'px';
+                    });
+                    break;
+            }
+        }
+
+        function setImagePreset(size) {
+            let width, height;
+            switch(size) {
+                case 'small':
+                    width = 200; height = 250;
+                    break;
+                case 'medium':
+                    width = 280; height = 350;
+                    break;
+                case 'large':
+                    width = 350; height = 450;
+                    break;
+            }
+
+            document.getElementById('charImageWidth').value = width;
+            document.getElementById('charImageHeight').value = height;
+            updateLayoutPreview();
+        }
+
+        function resetToDefaults() {
+            // Reset all layout controls to defaults
+            const defaults = {
+                charImageWidth: 280, charImageHeight: 350, tapButtonSize: 120, tapButtonFont: 16,
+                actionButtonSize: 50, actionButtonFont: 20, attrPanelHeight: 60, attrTextSize: 14,
+                headerHeight: 80, headerAvatarSize: 40, energyBarHeight: 70, energyTextSize: 16
+            };
+
+            Object.keys(defaults).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = defaults[key];
+                    updateLayoutDisplay(key, defaults[key]);
+                    applyLayoutChange(key, defaults[key]);
+                }
+            });
+
+            // Reset color settings
+            document.getElementById('textColorPicker').value = '#ffffff';
+            document.getElementById('textSizeSlider').value = 16;
+            document.getElementById('textWeightSelect').value = 'normal';
+            document.getElementById('backgroundColorPicker').value = '#16213e';
+            document.getElementById('buttonColorPicker').value = '#ff6b9d';
+            document.getElementById('iconStyleSelect').value = 'text-only';
+
+            updateTextSizeDisplay();
+            showNotification('Reset to default settings!', 'info');
+        }
+
+        function saveThemeSettings() {
+            const theme = {
+                textColor: document.getElementById('textColorPicker').value,
+                textSize: document.getElementById('textSizeSlider').value + 'px',
+                textWeight: document.getElementById('textWeightSelect').value,
+                backgroundColor: document.getElementById('backgroundColorPicker').value,
+                buttonColor: document.getElementById('buttonColorPicker').value,
+                iconStyle: document.getElementById('iconStyleSelect').value,
+                layout: {
+                    charImageWidth: parseInt(document.getElementById('charImageWidth').value),
+                    charImageHeight: parseInt(document.getElementById('charImageHeight').value),
+                    tapButtonSize: parseInt(document.getElementById('tapButtonSize').value),
+                    tapButtonFont: parseInt(document.getElementById('tapButtonFont').value),
+                    actionButtonSize: parseInt(document.getElementById('actionButtonSize').value),
+                    actionButtonFont: parseInt(document.getElementById('actionButtonFont').value),
+                    attrPanelHeight: parseInt(document.getElementById('attrPanelHeight').value),
+                    attrTextSize: parseInt(document.getElementById('attrTextSize').value),
+                    headerHeight: parseInt(document.getElementById('headerHeight').value),
+                    headerAvatarSize: parseInt(document.getElementById('headerAvatarSize').value),
+                    energyBarHeight: parseInt(document.getElementById('energyBarHeight').value),
+                    energyTextSize: parseInt(document.getElementById('energyTextSize').value)
+                }
+            };
+
+            applyTheme(theme);
+
+            fetch('/save-theme', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, theme: theme })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Theme & Layout saved!', 'success');
+                    gameData.theme_settings = theme;
+                    addChangelogEntry('Theme Customization', 'modification', 'Applied custom theme and layout settings.');
+                } else {
+                    showNotification('Failed to save settings', 'error');
+                }
+            });
+        }
+
+        function applyTheme(theme) {
+            const root = document.documentElement;
+            root.style.setProperty('--text-color', theme.textColor || '#ffffff');
+            root.style.setProperty('--text-size', theme.textSize || '16px');
+            root.style.setProperty('--text-weight', theme.textWeight || 'normal');
+            root.style.setProperty('--bg-color', theme.backgroundColor || '#16213e');
+            root.style.setProperty('--button-color', theme.buttonColor || '#ff6b9d');
+
+            // Apply text color to body
+            document.body.style.color = theme.textColor || '#ffffff';
+            document.body.style.fontSize = theme.textSize || '16px';
+            document.body.style.fontWeight = theme.textWeight || 'normal';
+
+            // Apply background color to mobile container
+            const mobileContainer = document.querySelector('.mobile-container');
+            if (mobileContainer) {
+                if (theme.backgroundColor && theme.backgroundColor.startsWith('#')) {
+                    mobileContainer.style.background = `linear-gradient(135deg, ${theme.backgroundColor} 0%, #11998e 100%)`;
+                } else if (theme.backgroundColor && theme.backgroundColor.startsWith('linear-gradient')) {
+                    mobileContainer.style.background = theme.backgroundColor;
+                } else {
+                    mobileContainer.style.background = 'linear-gradient(135deg, #2d1b69 0%, #11998e 100%)'; // Fallback
+                }
+            }
+
+
+            // Apply layout settings if available
+            if (theme.layout) {
+                Object.keys(theme.layout).forEach(property => {
+                    applyLayoutChange(property, theme.layout[property]);
+                });
+            }
+        }
+
+        function applyDefaultTheme() {
+            const defaultTheme = {
+                textColor: '#ffffff',
+                textSize: '16px',
+                textWeight: 'normal',
+                backgroundColor: '#16213e', // Default solid color
+                buttonColor: '#ff6b9d',
+                iconStyle: 'text-only',
+                layout: {
+                    charImageWidth: 280, charImageHeight: 350, tapButtonSize: 120, tapButtonFont: 16,
+                    actionButtonSize: 50, actionButtonFont: 20, attrPanelHeight: 60, attrTextSize: 14,
+                    headerHeight: 80, headerAvatarSize: 40, energyBarHeight: 70, energyTextSize: 16
+                }
+            };
+            applyTheme(defaultTheme);
+            // Ensure gameData reflects this if no user settings are loaded yet
+            if (!gameData.theme_settings) {
+                gameData.theme_settings = defaultTheme;
+            }
+            localStorage.setItem('themeSettings', JSON.stringify(defaultTheme)); // Save default
+        }
+
+        // Character Creation Functions
+        function addSpecialAttribute() {
+            const container = document.getElementById('attributesList');
+            const attributeDiv = document.createElement('div');
+            attributeDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+
+            attributeDiv.innerHTML = `
+                <input type="text" placeholder="Attribute name (e.g., Intelligence)" style="flex: 1; padding: 8px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; background: rgba(0,0,0,0.3); color: white;">
+                <input type="number" placeholder="Value (1-100)" min="1" max="100" value="10" style="width: 80px; padding: 8px; border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; background: rgba(0,0,0,0.3); color: white;">
+                <button type="button" onclick="this.parentElement.remove()" style="background: #ef4444; border: none; padding: 8px; border-radius: 5px; color: white; cursor: pointer;">×</button>
+            `;
+            container.appendChild(attributeDiv);
+        }
+
+        function previewImages() {
+            const fileInput = document.getElementById('characterImageInput');
+            const container = document.getElementById('imagePreviewContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            Array.from(fileInput.files).forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width: 60px; height: 60px; object-fit: cover; border-radius: 8px; border: 2px solid rgba(255,107,157,0.5);';
+                    container.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function createCharacter() {
+            const name = document.getElementById('characterName').value.trim();
+            const age = parseInt(document.getElementById('characterAge').value) || 22;
+            const description = document.getElementById('characterDescription').value.trim();
+            const occupation = document.getElementById('characterOccupation').value.trim();
+            const rarity = document.getElementById('characterRarity').value;
+            const nsfwContent = document.getElementById('nsfwContent').checked;
+
+            if (!name) {
+                showNotification('Character name is required!', 'error');
+                return;
+            }
+
+            if (age < 18) {
+                showNotification('Characters must be 18 or older!', 'error');
+                return;
+            }
+
+            const personalities = [];
+            document.querySelectorAll('#personalityCheckboxes input[type="checkbox"]:checked').forEach(cb => {
+                personalities.push(cb.value);
+            });
+
+            if (personalities.length === 0) {
+                personalities.push('sweet'); // Default personality if none selected
+            }
+
+            // Collect special attributes
+            const specialAttributes = [];
+            document.querySelectorAll('#attributesList > div').forEach(div => {
+                const inputs = div.querySelectorAll('input');
+                if (inputs[0].value.trim() && inputs[1].value) {
+                    specialAttributes.push({
+                        name: inputs[0].value.trim(),
+                        value: parseInt(inputs[1].value)
+                    });
+                }
+            });
+
+            // Calculate unlock cost based on rarity
+            const rarityCosts = {
+                common: 0,
+                rare: 100,
+                epic: 500,
+                legendary: 1000,
+                mythic: 2500
+            };
+
+            const characterData = {
+                name,
+                age,
+                description,
+                occupation,
+                personalities,
+                rarity,
+                unlockCost: rarityCosts[rarity],
+                nsfwContent,
+                specialAttributes,
+                type: 'advanced',
+                canEarnRewards: true,
+                rewardMultiplier: rarity === 'mythic' ? 3 : rarity === 'legendary' ? 2.5 : rarity === 'epic' ? 2 : rarity === 'rare' ? 1.5 : 1
+            };
+
+            const fileInput = document.getElementById('characterImageInput');
+            const formData = new FormData();
+            formData.append('characterData', JSON.stringify(characterData));
+            formData.append('userId', currentUserId);
+
+            // Add all selected images
+            Array.from(fileInput.files).forEach((file, index) => {
+                formData.append('images', file);
+            });
+
+            fetch('/create-character-advanced', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`${rarity.toUpperCase()} character "${name}" created successfully!${nsfwContent ? ' ⚠️' : ''}`, 'success');
+                    closeCharacterCreation();
+                    loadUserData(); // Refresh user data to include the new character
+
+                    // Add creation reward based on rarity
+                    const creationBonus = rarityCosts[rarity] * 0.1; // 10% of unlock cost as creation bonus
+                    if (creationBonus > 0 && currentUserId) {
+                        fetch('/admin/update-user-data', { // Assuming this endpoint exists
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                userId: currentUserId,
+                                points: userData.points + creationBonus
+                            })
+                        });
+                        showNotification(`Bonus: +${creationBonus} points for creating a ${rarity} character!`, 'info');
+                    }
+                } else {
+                    showNotification(data.error || 'Failed to create character', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error creating character:', error);
+                showNotification('Failed to create character', 'error');
+            });
+        }
+
+        // Add event listener for image preview
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageInput = document.getElementById('characterImageInput');
+            if (imageInput) {
+                imageInput.addEventListener('change', previewImages);
+            }
+        });
+
+        // Character Editor Functions
+        function openCharacterEditor(characterName) {
+            // This would load the character data and populate the editor
+            document.getElementById('characterEditorModal').style.display = 'block';
+            // TODO: Implement character loading and editing
+            document.getElementById('characterEditorContent').innerHTML = `<h2>Editing: ${characterName}</h2><p>Editor not fully implemented yet.</p>`;
+        }
+
+        function closeCharacterEditor() {
+            document.getElementById('characterEditorModal').style.display = 'none';
+        }
+
+        function loadCharacters() {
+            // Placeholder for loading characters into the manager
+            const characterGrid = document.getElementById('characterGrid');
+            if (!characterGrid) return;
+            characterGrid.innerHTML = ''; // Clear existing
+
+            if (gameData.custom_characters && gameData.custom_characters.length > 0) {
+                gameData.custom_characters.forEach(char => {
+                    const card = document.createElement('div');
+                    card.className = 'character-card';
+                    card.innerHTML = `
+                        <img src="${char.imageUrl || 'default-avatar.png'}" alt="${char.name}">
+                        <h4>${char.name}</h4>
+                        <small>${char.type || 'Basic'}</small>
+                    `;
+                    card.onclick = () => {
+                        document.querySelectorAll('.character-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        // Implement character selection logic
+                        selectCharacter(char.name);
+                    };
+                    characterGrid.appendChild(card);
+                });
+            } else {
+                characterGrid.innerHTML = '<p>No custom characters found. Create one!</p>';
+            }
+        }
+
+        function selectCharacter(characterName) {
+            // Logic to set the selected character and update game state
+            if (userData && userData.character_name !== characterName) {
+                // Update userData and save
+                userData.character_name = characterName;
+                // TODO: Save changes if necessary
+                loadGameData(); // Reload game data to reflect changes
+                showNotification(`Selected character: ${characterName}`, 'success');
+            }
+        }
+
+        // Placeholder functions for upgrade and changelog loading
+        function loadUpgrades() {
+            const upgradesList = document.getElementById('upgradesList');
+            if (!upgradesList) return;
+            upgradesList.innerHTML = '<p>Loading upgrades...</p>';
+            // TODO: Fetch and display upgrades from server
+            setTimeout(() => {
+                upgradesList.innerHTML = `
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <h4>Tap Power</h4>
+                            <p>Increases points per tap.</p>
+                        </div>
+                        <button class="upgrade-button" onclick="buyUpgrade('tap_power')">Upgrade (100)</button>
+                    </div>
+                    <div class="upgrade-item">
+                        <div class="upgrade-info">
+                            <h4>Hourly Rate</h4>
+                            <p>Increases points generated per hour.</p>
+                        </div>
+                        <button class="upgrade-button" onclick="buyUpgrade('hourly_rate')">Upgrade (200)</button>
+                    </div>
+                `;
+            }, 500);
+        }
+
+        function buyUpgrade(upgradeName) {
+            // TODO: Implement upgrade purchase logic
+            // This would involve a fetch call to the server
+            showNotification(`Purchased ${upgradeName}!`, 'success');
+            playSound('upgrade');
+            updateLevelUpButton(); // Re-check level up condition
+        }
+
+        // Placeholder functions for changelog loading
+        function loadChangelog() {
+            fetch(`/changelog/${currentUserId}`)
+                .then(response => response.json())
+                .then(data => {
+                    allChangelogEntries = data.changelog || [];
+                    renderChangelog();
+                })
+                .catch(error => {
+                    console.error('Failed to load changelog:', error);
+                    document.getElementById('changelogList').innerHTML = '<p>Failed to load changelog.</p>';
+                });
+        }
+
+        function setChangelogFilter(filter) {
+            currentChangelogFilter = filter;
+
+            // Update active tab
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const activeButton = document.querySelector(`[data-filter="${filter}"]`);
+            if (activeButton) activeButton.classList.add('active');
+
+            renderChangelog();
+        }
+
+        function renderChangelog() {
+            const changelogList = document.getElementById('changelogList');
+            if (!changelogList) return;
+            changelogList.innerHTML = '';
+
+            let filteredEntries = allChangelogEntries;
+
+            // Apply filter
+            if (currentChangelogFilter !== 'all') {
+                filteredEntries = allChangelogEntries.filter(entry => {
+                    switch(currentChangelogFilter) {
+                        case 'system':
+                            return ['system', 'auto_login', 'server'].includes(entry.type);
+                        case 'personal':
+                            return ['upgrade', 'achievement', 'creation', 'modification', 'addition'].includes(entry.type);
+                        case 'debug':
+                            return ['error', 'debug', 'warning'].includes(entry.type);
+                        default:
+                            return true;
+                    }
+                });
+            }
+
+            if (filteredEntries.length > 0) {
+                filteredEntries.forEach((entry, index) => {
+                    const entryDiv = document.createElement('div');
+                    entryDiv.className = 'changelog-entry';
+                    entryDiv.setAttribute('data-index', index);
+                    entryDiv.onclick = () => toggleChangelogEntry(index);
+
+                    entryDiv.innerHTML = `
+                        <div class="changelog-header">
+                            <span class="changelog-type ${entry.type}">${entry.type.toUpperCase()}</span>
+                            <span class="changelog-date">${new Date(entry.created_at * 1000).toLocaleDateString()}</span>
+                            <span class="changelog-expand-icon">▼</span>
+                        </div>
+                        <h4>${entry.title}</h4>
+                        <p>${entry.description}</p>
+                        ${entry.details ? `<div class="changelog-details" style="display: none;">${entry.details}</div>` : ''}
+                    `;
+                    changelogList.appendChild(entryDiv);
+                });
+            } else {
+                const emptyMessage = currentChangelogFilter === 'all'
+                    ? '<div class="no-changelog"><h3>📝 Welcome to Your Personal Changelog!</h3><p>This is where all your game progress and changes will be automatically tracked. Start playing to see entries appear here!</p></div>'
+                    : `<div class="no-changelog"><h3>🔍 No ${currentChangelogFilter} entries found</h3><p>Try a different filter or make some changes to see entries here!</p></div>`;
+                changelogList.innerHTML = emptyMessage;
+            }
+        }
+
+        function toggleChangelogEntry(index) {
+            const entryDiv = document.querySelector(`.changelog-entry[data-index="${index}"]`);
+            if (!entryDiv) return;
+
+            const detailsDiv = entryDiv.querySelector('.changelog-details');
+
+            if (detailsDiv) {
+                const isExpanded = entryDiv.classList.contains('expanded');
+                entryDiv.classList.toggle('expanded');
+                detailsDiv.style.display = isExpanded ? 'none' : 'block';
+            }
+        }
+
+        function addChangelogEntry(title, type, description, details = null) {
+            if (!currentUserId) return; // Only add if logged in
+
+            fetch('/changelog', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, title, type, description, details })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Changelog entry added:', title);
+                    // Optionally refresh changelog immediately if it's open
+                    if (document.getElementById('changelogModal').style.display === 'flex') {
+                        loadChangelog();
+                    }
+                }
+            })
+            .catch(error => console.error('Error adding changelog entry:', error));
+        }
+
+        function clearChangelog() {
+            if (confirm('Are you sure you want to clear all changelog entries? This cannot be undone.')) {
+                fetch(`/changelog/${currentUserId}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Changelog cleared', 'success');
+                        allChangelogEntries = []; // Clear in-memory data
+                        renderChangelog(); // Re-render empty list
+                    } else {
+                        showNotification('Failed to clear changelog.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to clear changelog:', error);
+                    showNotification('Failed to clear changelog.', 'error');
+                });
+            }
+        }
+
+        // Logout functionality
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('userId');
+                localStorage.removeItem('loadingAssets'); // Clear loading assets on logout
+                currentUserId = null;
+                userData = null;
+                gameData = {};
+                chatHistory = [];
+                allChangelogEntries = [];
+                currentChangelogFilter = 'all';
+                document.getElementById('userIdInput').value = '';
+                document.getElementById('gameInterface').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+                showNotification('Logged out successfully', 'info');
+                // Reset theme to default on logout
+                applyDefaultTheme();
+            }
+        }
+
+        // Auto-refresh user data periodically
+        setInterval(() => {
+            if (currentUserId) {
+                fetch(`/user/${currentUserId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Only update if data has changed or if it's the first load
+                        if (data.success && JSON.stringify(userData) !== JSON.stringify(data.userData)) {
+                            userData = data.userData; // Update userData
+                            loadGameData(); // Reload game data
+                        }
+                    })
+                    .catch(error => console.error('Error refreshing user data:', error));
+            }
+        }, 5000);
+
+
+        // Updated character display function to apply 3D effects and mood-based styling
+        function updateCharacterDisplay() {
+            const characterDisplay = document.getElementById('characterDisplay');
+            if (!characterDisplay) return;
+
+            if (userData && userData.characterImages && userData.characterImages.length > 0) {
+                // Find the best image for the current character and level
+                let bestImage = findBestImage(
+                    userData.character_name,
+                    userData.character_level,
+                    userData.characterImages
+                );
+
+                if (bestImage) {
+                    characterDisplay.style.backgroundImage = `url('${bestImage.url}')`;
+                    characterDisplay.style.display = 'block';
+                } else {
+                    characterDisplay.style.display = 'none'; // Hide if no image found
+                }
+
+                // Apply 3D effects based on character level/mood
+                characterDisplay.className = 'character-display'; // Reset classes
+
+                // Add level-based background integration
+                if (bestImage && bestImage.level && bestImage.level > 50) {
+                    characterDisplay.classList.add('level-background');
+                }
+
+                // Add mood-based effects if available
+                if (window.currentMood) {
+                    characterDisplay.classList.add(`mood-${window.currentMood}`);
+                }
+
+                // Dynamic lighting based on time of day
+                const hour = new Date().getHours();
+                if (hour >= 6 && hour < 18) {
+                    // Daytime - warmer lighting
+                    characterDisplay.style.filter = 'sepia(0.1) brightness(1.1)';
+                } else {
+                    // Nighttime - cooler lighting
+                    characterDisplay.style.filter = 'hue-rotate(10deg) brightness(0.9)';
+                }
+
+            } else {
+                characterDisplay.style.display = 'none';
+            }
+        }
+
+        // Function to set background and adapt character
+        function setBackground(index) {
+            if (userData.backgrounds && userData.backgrounds[index]) {
+                const background = userData.backgrounds[index];
+                document.body.style.backgroundImage = `url('${background.url}')`;
+                userData.currentBackground = index;
+                saveUserData(); // Assuming saveUserData exists and works
+                showMessage(`Background set to "${background.name}"!`); // Assuming showMessage exists
+
+                // Adapt character display to background
+                adaptCharacterToBackground(background);
+            }
+        }
+
+        // Function to adapt character display based on background properties
+        function adaptCharacterToBackground(background) {
+            const characterDisplay = document.getElementById('characterDisplay');
+            if (!characterDisplay) return;
+
+            // Analyze background name/type for better integration
+            const bgName = background.name.toLowerCase();
+
+            if (bgName.includes('dark') || bgName.includes('night')) {
+                characterDisplay.style.mixBlendMode = 'screen';
+                characterDisplay.style.opacity = '0.9';
+            } else if (bgName.includes('bright') || bgName.includes('day') || bgName.includes('light')) {
+                characterDisplay.style.mixBlendMode = 'multiply';
+                characterDisplay.style.opacity = '0.8';
+            } else if (bgName.includes('fantasy') || bgName.includes('magic')) {
+                characterDisplay.style.mixBlendMode = 'overlay';
+                characterDisplay.style.filter += ' saturate(1.2) contrast(1.1)';
+            } else {
+                characterDisplay.style.mixBlendMode = 'luminosity';
+                characterDisplay.style.opacity = '0.85';
+            }
+
+            // Add subtle parallax effect
+            characterDisplay.style.transform = 'perspective(1000px) rotateY(-5deg) rotateX(2deg) translateZ(20px)';
+        }
+
+        // Placeholder for showMessage function if it's used elsewhere
+        function showMessage(message, type = 'info') {
+            console.log(`[${type.toUpperCase()}] ${message}`); // Default to console log if not defined
+            // Implement a visible notification if needed
+            showNotification(message, type);
+        }
+        // Placeholder for saveUserData function if it's used elsewhere
+        function saveUserData() {
+            console.log('saveUserData called'); // Default to console log if not defined
+            // A real implementation would save the updated userData to the server/local storage
+            // Example: fetch('/update-user-data', { method: 'POST', body: JSON.stringify(userData) });
+        }
+
+        // Placeholder for updateUI function
+        function updateUI() {
+            console.log('updateUI called');
+            // This function would update all visible elements based on current gameData
+            loadGameData();
+        }
+
+        // Placeholder for loadUserData function
+        function loadUserData() {
+            console.log('loadUserData called');
+            // This function would fetch fresh user data from the server
+            // and then call loadGameData()
+            if (currentUserId) {
+                 fetch(`/user/${currentUserId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            userData = data.userData;
+                            loadGameData();
+                        }
+                    })
+                    .catch(error => console.error('Error loading user data:', error));
+            }
+        }
+
+        // Function to refresh user data (call after actions that might update server data)
+        function refreshUserData() {
+             loadUserData();
+        }
+
+        // Placeholder for creating advanced character
+        function createAdvancedCharacter() {
+            // This function would handle the creation of a character using the advanced modal data
+            console.log("Creating advanced character...");
+            // ... implementation ...
+            showNotification("Advanced character creation called (placeholder)", "info");
+        }
+
+        // Placeholder for switching advanced tab
+        function switchAdvancedTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId + '-tab').classList.add('active');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.tab-btn[onclick*='${tabId}']`).classList.add('active');
+        }
+
+        // Placeholder for removing a custom attribute
+        function removeAttribute(button) {
+            button.parentElement.remove();
+        }
+
+        // Placeholder for adding a custom attribute
+        function addCustomAttribute() {
+            const attributesList = document.getElementById('attributesList');
+            const newAttributeDiv = document.createElement('div');
+            newAttributeDiv.className = 'attribute-item';
+            newAttributeDiv.innerHTML = `
+                <input type="text" placeholder="Attribute name" class="attr-name">
+                <input type="number" placeholder="Value" min="1" max="100" class="attr-value">
+                <button onclick="removeAttribute(this)">Remove</button>
+            `;
+            attributesList.appendChild(newAttributeDiv);
+        }
+
+        // Placeholder for removing a trigger phrase
+        function removeTrigger(button) {
+            button.parentElement.remove();
+        }
+
+        // Placeholder for adding a trigger phrase
+        function addTriggerPhrase() {
+            const triggerList = document.getElementById('triggerList');
+            const newTriggerDiv = document.createElement('div');
+            newTriggerDiv.className = 'trigger-item';
+            newTriggerDiv.innerHTML = `
+                <input type="text" placeholder="Trigger word/phrase" class="trigger-word">
+                <input type="text" placeholder="Response" class="trigger-response">
+                <button onclick="removeTrigger(this)">Remove</button>
+            `;
+            triggerList.appendChild(newTriggerDiv);
+        }
+         // Placeholder function for managing character images
+        function manageCharacterImages() {
+            showNotification("Managing character images is not fully implemented yet.", "info");
+        }
+
+        // Placeholder function for opening character selection modal
+        function openCharacterSelectionModal() {
+            showNotification("Opening character selection is not fully implemented yet.", "info");
+        }
+
+        // Placeholder for placeholder functions
+        function showUrlUpload() { console.log("Showing URL upload"); }
+        function showFileUpload() { console.log("Showing file upload"); }
+        function closeAdvancedCreationModal() { document.getElementById('advancedCharacterModal').style.display = 'none'; }
+        function removeAttribute(button) { button.parentElement.remove(); }
+        function addCustomAttribute() { console.log("Add custom attribute"); }
+        function removeTrigger(button) { button.parentElement.remove(); }
+        function addTriggerPhrase() { console.log("Add trigger phrase"); }
+        function previewMultipleImages(input) {
+            const container = document.getElementById('advImagePreview');
+            if (!container) return;
+            container.innerHTML = ''; // Clear previous previews
+
+            Array.from(input.files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width: 80px; height: 80px; object-fit: cover; border-radius: 5px; margin-right: 5px;';
+                    container.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            });
+        }
+
+    </script>
+</body>
+</html>
