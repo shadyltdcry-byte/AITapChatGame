@@ -197,9 +197,9 @@ export default function UpgradeModal({ isOpen, onClose, upgrades, user }: Upgrad
         <div className="flex-1 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
-              <TabsTrigger value="upgrades">Available Upgrades</TabsTrigger>
-              <TabsTrigger value="create">Create Upgrade</TabsTrigger>
-              <TabsTrigger value="manage">Manage Upgrades</TabsTrigger>
+              <TabsTrigger value="upgrades">LP/Hour Upgrades</TabsTrigger>
+              <TabsTrigger value="create">Create New Upgrade</TabsTrigger>
+              <TabsTrigger value="manage">Admin Management</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upgrades" className="flex-1 overflow-hidden">

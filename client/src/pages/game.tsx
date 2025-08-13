@@ -67,7 +67,7 @@ const isCurrentUserAdmin = (user: User | undefined) => {
 };
 
 export default function Game() {
-  // All state hooks first
+  // All state hooks first - ALWAYS maintain the same order
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
@@ -94,7 +94,7 @@ export default function Game() {
     nsfwEnabled: false
   });
 
-  // Hooks
+  // Hooks - ALWAYS call these regardless of authentication state
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -137,12 +137,7 @@ export default function Game() {
     enabled: !!user && isAuthenticated
   });
 
-  // Handle authentication success
-  const handleAuthSuccess = (user: any) => {
-    setCurrentUser(user);
-    setIsAuthenticated(true);
-  };
-
+  // ALL useEffect hooks - keep same order
   // Simulate loading progress
   useEffect(() => {
     if (isAuthenticated && loadingProgress < 100) {
@@ -177,6 +172,12 @@ export default function Game() {
 
     return () => clearInterval(interval);
   }, [queryClient]);
+
+  // Handle authentication success
+  const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  };
 
   // Early returns after all hooks
   if (!isAuthenticated) {

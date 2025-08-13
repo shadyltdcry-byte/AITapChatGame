@@ -97,18 +97,22 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
 
   const character = specificCharacter || selectedCharacter;
 
-  // Fetch chat messages
+  // Fetch chat messages with better caching
   const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
     queryKey: ['/api/chat', userId, character?.id],
     queryFn: async () => {
       if (!character?.id) return [];
       const response = await apiRequest("GET", `/api/chat/${userId}/${character.id}`);
-      return response.json();
+      const data = await response.json();
+      console.log('Chat messages loaded:', data);
+      return data;
     },
     enabled: !!character?.id,
-    refetchInterval: 5000, // Poll for new messages
-    staleTime: 1000, // Consider data fresh for 1 second
-    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
+    refetchInterval: 3000, // Poll more frequently
+    staleTime: 500, // Consider data fresh for shorter time
+    gcTime: 1000 * 60 * 2, // Shorter cache time
+    refetchOnMount: true, // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
   });
 
   // Send message mutation
@@ -125,19 +129,24 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
     },
     onSuccess: (data) => {
       setNewMessage("");
-      // Invalidate and refetch messages immediately
+      
+      // Invalidate queries to force fresh data
       queryClient.invalidateQueries({ 
         queryKey: ['/api/chat', userId, character?.id] 
       });
-
-      // Force a refetch to get the latest messages
+      
+      // Multiple refresh attempts to ensure we get the latest data
       setTimeout(() => {
         refetchMessages();
-      }, 500);
+      }, 100);
+      
+      setTimeout(() => {
+        refetchMessages();
+      }, 1000);
 
       toast({
         title: "Message sent!",
-        description: data.aiResponse?.message ? "AI responded!" : "Message delivered",
+        description: data.aiResponse?.message ? `${character?.name} responded!` : "Message delivered",
       });
     },
     onError: (error: any) => {
