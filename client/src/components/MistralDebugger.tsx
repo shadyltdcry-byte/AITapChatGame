@@ -26,7 +26,7 @@ export default function MistralDebugger({ isOpen, onClose }: MistralDebuggerProp
 
   const debugMutation = useMutation({
     mutationFn: async (data: { code: string; error: string; context?: string }) => {
-      const response = await apiRequest("/api/debug/assist", "POST", data);
+      const response = await apiRequest("POST", "/api/debug/assist", data);
       return response.json();
     },
     onSuccess: (data) => {

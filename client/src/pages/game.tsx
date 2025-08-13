@@ -186,8 +186,7 @@ export default function Game() {
     }
   }, [isAuthenticated]);
 
-  // Early returns after all hooks
-
+  // Early returns after all hooks - make sure loading completes first
   if (loadingProgress < 100) {
     return <LoadingScreen progress={loadingProgress} />;
   }

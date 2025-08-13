@@ -1532,6 +1532,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug assist endpoint
+  app.post("/api/debug/assist", async (req, res) => {
+    try {
+      const { code, error, context } = req.body;
+      
+      if (!code || !error) {
+        return res.status(400).json({ error: "Code and error are required" });
+      }
+
+      const assistance = await mistralService.debugAssist({
+        code,
+        error,
+        context
+      });
+
+      res.json({ assistance });
+    } catch (error) {
+      console.error("Debug assist error:", error);
+      res.status(500).json({ error: "Failed to get debug assistance" });
+    }
+  });
+
   app.post("/api/debug/assist", async (req, res) => {
     try {
       const { code, error, context } = req.body;
