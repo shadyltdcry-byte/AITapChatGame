@@ -90,34 +90,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create default upgrades
         const defaultUpgrades = [
           {
-            name: "Tap Power",
-            description: "Increase points per tap",
-            cost: 100,
+            name: "Love Making",
+            description: "Master the art of intimate connection",
+            cost: 1500,
             level: 1,
-            maxLevel: 10,
-            tapBonus: 25,
-            hourlyBonus: 0,
+            maxLevel: 25,
+            tapBonus: 0,
+            hourlyBonus: 155,
             requiredLevel: 1
           },
           {
-            name: "Energy Boost",
-            description: "Increase maximum energy",
-            cost: 150,
+            name: "Seduction",
+            description: "Enhance your powers of attraction",
+            cost: 2200,
             level: 1,
-            maxLevel: 10,
+            maxLevel: 25,
             tapBonus: 0,
-            hourlyBonus: 0,
-            requiredLevel: 1
-          },
-          {
-            name: "Auto Collector",
-            description: "Earn points automatically",
-            cost: 250,
-            level: 1,
-            maxLevel: 15,
-            tapBonus: 0,
-            hourlyBonus: 50,
+            hourlyBonus: 225,
             requiredLevel: 2
+          },
+          {
+            name: "Romance",
+            description: "Perfect your romantic gestures",
+            cost: 3100,
+            level: 1,
+            maxLevel: 25,
+            tapBonus: 0,
+            hourlyBonus: 310,
+            requiredLevel: 3
+          },
+          {
+            name: "Charm",
+            description: "Develop irresistible charisma",
+            cost: 4500,
+            level: 1,
+            maxLevel: 25,
+            tapBonus: 0,
+            hourlyBonus: 450,
+            requiredLevel: 4
+          },
+          {
+            name: "Passion",
+            description: "Unlock deeper levels of desire",
+            cost: 6800,
+            level: 1,
+            maxLevel: 25,
+            tapBonus: 0,
+            hourlyBonus: 680,
+            requiredLevel: 5,
+            requiredUpgrades: {
+              "love-making": 10,
+              "seduction": 10,
+              "romance": 10,
+              "charm": 10
+            }
           }
         ];
 
@@ -320,7 +346,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalHourlyBonus = 0;
 
       for (const userUpgrade of allUserUpgrades) {
-        totalHourlyBonus += userUpgrade.hourlyBonus * userUpgrade.level;
+        // Calculate bonus with level scaling (15% increase per level)
+        const baseBonus = userUpgrade.hourlyBonus;
+        const levelBonus = Math.floor(baseBonus + (baseBonus * 0.15 * userUpgrade.level));
+        totalHourlyBonus += levelBonus;
       }
 
       // Update user's hourly rate
