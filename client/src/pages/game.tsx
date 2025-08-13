@@ -179,10 +179,14 @@ export default function Game() {
     setIsAuthenticated(true);
   };
 
+  // Set authenticated by default for now (remove Telegram pre-auth)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setIsAuthenticated(true);
+    }
+  }, [isAuthenticated]);
+
   // Early returns after all hooks
-  if (!isAuthenticated) {
-    return <TelegramAuth onAuthSuccess={handleAuthSuccess} />;
-  }
 
   if (loadingProgress < 100) {
     return <LoadingScreen progress={loadingProgress} />;
