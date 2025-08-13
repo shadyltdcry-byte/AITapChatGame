@@ -78,14 +78,20 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
   // Fetch selected character
   const { data: selectedCharacter } = useQuery({
     queryKey: ['/api/character/selected', userId],
-    queryFn: () => fetch(`/api/character/selected/${userId}`).then(res => res.json()),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/character/selected/${userId}`);
+      return response.json();
+    },
     enabled: !selectedCharacterId
   });
 
   // Fetch specific character if provided
   const { data: specificCharacter } = useQuery({
     queryKey: ['/api/character', selectedCharacterId],
-    queryFn: () => fetch(`/api/character/${selectedCharacterId}`).then(res => res.json()),
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/character/${selectedCharacterId}`);
+      return response.json();
+    },
     enabled: !!selectedCharacterId
   });
 
@@ -96,10 +102,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
     queryKey: ['/api/chat', userId, character?.id],
     queryFn: async () => {
       if (!character?.id) return [];
-      const response = await fetch(`/api/chat/${userId}/${character.id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch messages');
-      }
+      const response = await apiRequest("GET", `/api/chat/${userId}/${character.id}`);
       return response.json();
     },
     enabled: !!character?.id,
@@ -110,17 +113,15 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: (message: string) => {
+    mutationFn: async (message: string) => {
       if (!character?.id) throw new Error("No character selected");
-      return apiRequest('/api/chat/send', {
-        method: 'POST',
-        body: {
-          userId,
-          characterId: character.id,
-          message,
-          isFromUser: true
-        }
+      const response = await apiRequest("POST", "/api/chat/send", {
+        userId,
+        characterId: character.id,
+        message,
+        isFromUser: true
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat', userId, character?.id] });
@@ -140,7 +141,10 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
 
   // Clear chat mutation
   const clearChatMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/chat/${userId}/${character?.id}`, { method: 'DELETE' }),
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/chat/${userId}/${character?.id}`);
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat', userId, character?.id] });
       toast({ title: "Success", description: "Chat history cleared!" });
@@ -365,13 +369,13 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
                 <div className="text-center py-8">
                   <div className="space-y-2">
                     <Smile className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <h4 className="font-semibold">Continue your conversation</h4>
+                    <h4 className="font-semibold">Start a conversation</h4>
                     <p className="text-sm text-muted-foreground">
-                      Your chat history with {character.name} will appear here
+                      Send a message to {character.name} to get started!
                     </p>
                     {character.customGreetings?.length > 0 && (
                       <div className="space-y-2 mt-4">
-                        <p className="text-xs text-muted-foreground">Quick responses:</p>
+                        <p className="text-xs text-muted-foreground">Quick starters:</p>
                         <div className="flex flex-wrap gap-2 justify-center">
                           {character.customGreetings.slice(0, 3).map((greeting, index) => (
                             <Button

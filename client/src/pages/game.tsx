@@ -1,48 +1,53 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import CharacterDisplay from "@/components/CharacterDisplay";
-import BoostersModal from "@/components/BoostersModal";
-//import ChatModal from "@/components/ChatModal";
-import EnhancedChatModal from "@/components/EnhancedChatModal";
-import AdminPanelFull from "@/components/AdminPanelFull";
-import WheelModal from "@/components/WheelModal";
-import AchievementsModal from "@/components/AchievementsModal";
-import VIPModal from "@/components/VIPModal";
-import FloatingHearts from "@/components/FloatingHearts";
-import InGameAIControls from "@/components/InGameAIControls";
-import MistralDebugger from "@/components/MistralDebugger";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { 
   Settings, 
+  Save, 
   Heart, 
-  Gem, 
   Zap, 
-  Target, 
-  Star, 
-  ArrowUp, 
-  ShoppingBag, 
-  MessageCircle, 
-  ListChecks,
+  Crown, 
+  Trophy, 
+  Users, 
+  Star,
+  ArrowUp,
+  Coins,
+  Gamepad2,
+  MessageCircle,
+  Palette,
   Volume2,
-  VolumeX,
-  Moon,
-  Sun,
+  Bell,
   Shield,
-  Eye,
-  Save,
-  BarChart3,
-  Brain
+  Smartphone,
+  Monitor,
+  RotateCcw
 } from "lucide-react";
-import type { User, Character, Upgrade, GameStats } from "@shared/schema";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import { useGameState } from "@/hooks/use-game-state";
+import FloatingHearts from "@/components/FloatingHearts";
+import WheelModal from "@/components/WheelModal";
+import VIPModal from "@/components/VIPModal";
+import AchievementsModal from "@/components/AchievementsModal";
+import BoostersModal from "@/components/BoostersModal";
+import UpgradeModal from "@/components/UpgradeModal";
+import ChatModal from "@/components/ChatModal";
+import CharacterDisplay from "@/components/CharacterDisplay";
+import GameHeader from "@/components/GameHeader";
+import LoadingScreen from "@/components/LoadingScreen";
+import TelegramAuth from "@/components/TelegramAuth";
 
+// Mock user ID for testing
 const MOCK_USER_ID = "default-player";
 
 // Check if user is admin (you can modify this logic based on your needs)
@@ -51,34 +56,54 @@ const isCurrentUserAdmin = (user: User | undefined) => {
 };
 
 export default function Game() {
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const [showWheelModal, setShowWheelModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showVIPModal, setShowVIPModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showAIControls, setShowAIControls] = useState(false);
   const [showCharacterCreation, setShowCharacterCreation] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
   const [heartTriggers, setHeartTriggers] = useState<Array<{ amount: number; x: number; y: number }>>([]);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Settings state
-  const [localSettings, setLocalSettings] = useState({
-    nsfwEnabled: false,
-    soundEnabled: true,
-    musicEnabled: true,
-    vibrationEnabled: true,
-    darkMode: true,
-    fontSize: 16,
-    animationSpeed: 1,
-    autoSave: true,
-    notifications: true
-  });
+  // Handle authentication success
+  const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  };
 
-  // Initialize user first
+  // Simulate loading progress
+  useEffect(() => {
+    if (isAuthenticated && loadingProgress < 100) {
+      const interval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(interval);
+            return 100;
+          }
+          return prev + 10;
+        });
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, loadingProgress]);
+
+  // Show loading screen if not authenticated or still loading
+  if (!isAuthenticated) {
+    return <TelegramAuth onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  if (loadingProgress < 100) {
+    return <LoadingScreen progress={loadingProgress} />;
+  }
+
+  // Initialize user data
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user/init"],
     queryFn: async () => {
@@ -583,7 +608,7 @@ export default function Game() {
         user={user}
       />
 
-      <EnhancedChatModal
+      <ChatModal
         isOpen={showChatModal}
         onClose={() => setShowChatModal(false)}
         characterId={character?.id || ""}

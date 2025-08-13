@@ -11,6 +11,7 @@ import { insertUserSchema, insertCharacterSchema, insertUpgradeSchema, insertCha
 import { randomUUID } from "crypto";
 import { MediaFile } from "@shared/schema";
 import { mistralService } from "./mistralService";
+import crypto from "crypto";
 
 // Configure multer for file uploads
 const uploadDir = './public/uploads';
@@ -48,6 +49,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', express.static('./public/uploads'));
   app.use('/public', express.static('./public'));
 
+  // Telegram Bot configuration
+  const BOT_TOKEN = "7513981050:AAGcpSnd75FnPCzznJy_Vrqwe982f5nBTcY";
+  const BOT_NAME = "ClassikLoyalty_Bot";
+
+  // Verify Telegram WebApp data
+  function verifyTelegramWebAppData(initData: string): any {
+    try {
+      const urlParams = new URLSearchParams(initData);
+      const hash = urlParams.get('hash');
+      urlParams.delete('hash');
+
+      // Create data check string
+      const dataCheckString = Array.from(urlParams.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([key, value]) => `${key}=${value}`)
+        .join('\n');
+
+      // Create secret key
+      const secretKey = crypto.createHmac('sha256', 'WebAppData').update(BOT_TOKEN).digest();
+
+      // Calculate hash
+      const calculatedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+
+      if (calculatedHash !== hash) {
+        throw new Error('Invalid hash');
+      }
+
+      // Parse user data
+      const userString = urlParams.get('user');
+      if (userString) {
+        return JSON.parse(userString);
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Telegram verification error:', error);
+      return null;
+    }
+  }
+
+  // Telegram authentication
+  app.post("/api/auth/telegram", async (req, res) => {
+    try {
+      const { initData } = req.body;
+
+      if (!initData) {
+        return res.status(400).json({ success: false, error: "No init data provided" });
+      }
+
+      const telegramUser = verifyTelegramWebAppData(initData);
+
+      if (!telegramUser) {
+        return res.status(401).json({ success: false, error: "Invalid Telegram data" });
+      }
+
+      // Check if user exists or create new one
+      let user = await storage.getUserByTelegramId(telegramUser.id.toString());
+
+      if (!user) {
+        // Create new user
+        const newUser = await storage.createUser({
+          id: `tg_${telegramUser.id}`,
+          telegramId: telegramUser.id.toString(),
+          username: telegramUser.username || telegramUser.first_name || "Player",
+          firstName: telegramUser.first_name,
+          lastName: telegramUser.last_name,
+          password: "default", // Placeholder, not used for Telegram auth
+          level: 1,
+          points: 1000, // Give some starting points
+          energy: 4500,
+          maxEnergy: 4500,
+          hourlyRate: 0,
+          isAdmin: false,
+          nsfwEnabled: false,
+          lustGems: 50, // Give some starting gems
+          lastActive: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        // Initialize user stats
+        await storage.createGameStats({
+          id: crypto.randomUUID(),
+          userId: newUser.id,
+          totalClicks: 0,
+          totalEarned: 0,
+          maxCombo: 0,
+          gamesPlayed: 0,
+          charactersUnlocked: 0,
+          upgradesPurchased: 0,
+          achievementsUnlocked: 0,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        user = newUser;
+      } else {
+        // Update last active
+        await storage.updateUser(user.id, { lastActive: new Date(), updatedAt: new Date() });
+      }
+
+      res.json({
+        success: true,
+        user: user
+      });
+    } catch (error) {
+      console.error("Telegram auth error:", error);
+      res.status(500).json({ success: false, error: "Authentication failed" });
+    }
+  });
+
   // User routes
   app.get("/api/user/:id", async (req, res) => {
     try {
@@ -61,14 +173,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize or get default user
+  // Initialize user
   app.post("/api/user/init", async (req, res) => {
     try {
       const defaultUserId = "default-player";
-      
+
       // Check if default user already exists
       let user = await storage.getUser(defaultUserId);
-      
+
       if (!user) {
         // Create default user
         user = await storage.createUser({
@@ -84,9 +196,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nsfwEnabled: false,
           lustGems: 50 // Give some starting gems
         });
-        
+
         console.log('Created default user:', user.id);
-        
+
         // Create default upgrades
         const defaultUpgrades = [
           {
@@ -192,12 +304,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           customGreetings: ["Hello there! I'm Luna, nice to meet you!"],
           customResponses: [],
         });
-        
+
         // Properly select the character for this user
         await storage.selectCharacter(user.id, defaultCharacter.id);
         console.log('Created default character and set as selected:', defaultCharacter.id);
       }
-      
+
       res.json(user);
     } catch (error) {
       console.error('Error initializing user:', error);
@@ -412,19 +524,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: req.body.message || '',
         isFromUser: true
       };
-      
+
       if (!requestBody.message.trim()) {
         return res.status(400).json({ error: "Message is required" });
       }
-      
+
       const messageData = insertChatMessageSchema.parse(requestBody);
       console.log('Chat send request:', messageData);
-      
+
       const message = await storage.createChatMessage(messageData);
 
       // Get character for personality context
       const character = messageData.characterId ? await storage.getCharacter(messageData.characterId) : null;
-      
+
       // Get recent conversation history (excluding the current message being sent)
       const recentMessages = await storage.getChatMessages(messageData.userId, messageData.characterId || undefined);
       const conversationHistory = recentMessages
@@ -482,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "I'm enjoying our conversation!",
       `${character?.name || 'I'} appreciate${character?.name ? 's' : ''} talking with you.`
     ];
-    
+
     const lowerMessage = message.toLowerCase();
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi')) {
       return `Hello there! I'm ${character?.name || 'here'} and I'm happy to chat with you!`;
@@ -491,7 +603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } else if (lowerMessage.includes('love') || lowerMessage.includes('like')) {
       return "That's so sweet of you to say! 💕";
     }
-    
+
     return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
   }
 
@@ -923,24 +1035,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/settings", async (req, res) => {
-    try {
-      const settings = await storage.getGameSettings();
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  app.patch("/api/settings", async (req, res) => {
-    try {
-      await storage.updateGameSettings(req.body);
-      const settings = await storage.getGameSettings();
-      res.json(settings);
-    } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // Duplicate settings routes, keeping the first occurrence
+  // app.get("/api/settings", async (req, res) => { ... });
+  // app.patch("/api/settings", async (req, res) => { ... });
 
   // ===== IMAGE MANAGEMENT SYSTEM =====
 
@@ -1001,11 +1098,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const file of files) {
         try {
           console.log('Processing file:', file.originalname, 'Size:', file.size);
-          
+
           // Process image with Sharp if options provided
           let processedPath = file.path;
           let finalFilename = file.filename;
-          
+
           if (processOptions) {
             try {
               const options = JSON.parse(processOptions);
@@ -1073,7 +1170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           const savedFile = await storage.uploadMedia(mediaFile);
           uploadedFiles.push(savedFile);
-          
+
           console.log('Successfully saved file:', savedFile.id);
         } catch (fileError) {
           console.error('Error processing file:', file.originalname, fileError);
@@ -1261,23 +1358,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin routes for characters
-  app.get("/api/admin/characters", async (req, res) => {
-    try {
-      const characters = await storage.getAllCharacters();
-      res.json(characters);
-    } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // Duplicate route, keeping the first occurrence
+  // app.get("/api/admin/characters", async (req, res) => { ... });
 
-  app.get("/api/admin/media", async (req, res) => {
-    try {
-      const mediaFiles = await storage.getMediaFiles();
-      res.json(mediaFiles);
-    } catch (error) {
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // Duplicate route, keeping the first occurrence
+  // app.get("/api/admin/media", async (req, res) => { ... });
 
   // Character management routes
   app.get("/api/character/:id", async (req, res) => {
@@ -1405,7 +1490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         '.gif': 'image/gif',
         '.webp': 'image/webp'
       }[ext] || 'application/octet-stream';
-      
+
       res.setHeader('Content-Type', contentType);
       res.setHeader('Cache-Control', 'public, max-age=31536000');
       res.sendFile(path.resolve(filePath));
