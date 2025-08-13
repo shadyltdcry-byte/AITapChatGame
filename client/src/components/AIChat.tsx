@@ -94,12 +94,18 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
   // Fetch chat messages
   const { data: messages = [], isLoading: messagesLoading } = useQuery({
     queryKey: ['/api/chat', userId, character?.id],
-    queryFn: () => {
+    queryFn: async () => {
       if (!character?.id) return [];
-      return fetch(`/api/chat/${userId}/${character.id}`).then(res => res.json());
+      const response = await fetch(`/api/chat/${userId}/${character.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch messages');
+      }
+      return response.json();
     },
     enabled: !!character?.id,
-    refetchInterval: 5000 // Poll for new messages
+    refetchInterval: 5000, // Poll for new messages
+    staleTime: 1000, // Consider data fresh for 1 second
+    gcTime: 1000 * 60 * 5, // Keep in cache for 5 minutes
   });
 
   // Send message mutation
@@ -359,13 +365,13 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
                 <div className="text-center py-8">
                   <div className="space-y-2">
                     <Smile className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <h4 className="font-semibold">Start a conversation</h4>
+                    <h4 className="font-semibold">Continue your conversation</h4>
                     <p className="text-sm text-muted-foreground">
-                      Say hello to {character.name}!
+                      Your chat history with {character.name} will appear here
                     </p>
                     {character.customGreetings?.length > 0 && (
                       <div className="space-y-2 mt-4">
-                        <p className="text-xs text-muted-foreground">Suggested greetings:</p>
+                        <p className="text-xs text-muted-foreground">Quick responses:</p>
                         <div className="flex flex-wrap gap-2 justify-center">
                           {character.customGreetings.slice(0, 3).map((greeting, index) => (
                             <Button

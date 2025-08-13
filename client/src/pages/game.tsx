@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import CharacterDisplay from "@/components/CharacterDisplay";
-import UpgradeModal from "@/components/UpgradeModal";
+import BoostersModal from "@/components/BoostersModal";
 //import ChatModal from "@/components/ChatModal";
 import EnhancedChatModal from "@/components/EnhancedChatModal";
 import AdminPanelFull from "@/components/AdminPanelFull";
@@ -577,10 +577,9 @@ export default function Game() {
       </Dialog>
 
       {/* Modals */}
-      <UpgradeModal 
+      <BoostersModal 
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        upgrades={upgrades || []}
         user={user}
       />
 

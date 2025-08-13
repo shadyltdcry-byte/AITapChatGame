@@ -35,9 +35,15 @@ const characterCreationSchema = insertCharacterSchema.extend({
     mysterious: 0,
     shy: 0,
   }),
-  customTriggerWords: z.array(z.string()).default([]),
+  customTriggerWords: z.array(z.object({
+    word: z.string(),
+    response: z.string(),
+  })).default([]),
   customGreetings: z.array(z.string()).default([]),
   customResponses: z.array(z.string()).default([]),
+  interests: z.string().optional(),
+  quirks: z.string().optional(),
+  backstory: z.string().optional(),
 });
 
 type CharacterCreationForm = z.infer<typeof characterCreationSchema>;
@@ -250,6 +256,65 @@ export default function CharacterCreation() {
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="backstory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Backstory</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            {...field}
+                            value={field.value || ""} 
+                            placeholder="Character's background and history"
+                            data-testid="textarea-backstory"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="interests"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Interests & Hobbies</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field}
+                              value={field.value || ""} 
+                              placeholder="What the character enjoys doing"
+                              data-testid="textarea-interests"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="quirks"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quirks & Habits</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              {...field}
+                              value={field.value || ""} 
+                              placeholder="Unique traits and mannerisms"
+                              data-testid="textarea-quirks"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -616,8 +681,20 @@ export default function CharacterCreation() {
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {form.watch("customGreetings")?.map((greeting, index) => (
-                          <span key={index} className="bg-blue-600 text-white px-2 py-1 rounded text-sm">
+                          <span key={index} className="bg-blue-600 text-white px-2 py-1 rounded text-sm flex items-center gap-2">
                             {greeting}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const currentGreetings = form.getValues("customGreetings") || [];
+                                form.setValue("customGreetings", currentGreetings.filter((_, i) => i !== index));
+                              }}
+                              className="ml-1 h-auto p-1 text-white hover:bg-blue-700"
+                            >
+                              ×
+                            </Button>
                           </span>
                         ))}
                       </div>
@@ -645,38 +722,73 @@ export default function CharacterCreation() {
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {form.watch("customResponses")?.map((response, index) => (
-                          <span key={index} className="bg-green-600 text-white px-2 py-1 rounded text-sm">
+                          <span key={index} className="bg-green-600 text-white px-2 py-1 rounded text-sm flex items-center gap-2">
                             {response}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const currentResponses = form.getValues("customResponses") || [];
+                                form.setValue("customResponses", currentResponses.filter((_, i) => i !== index));
+                              }}
+                              className="ml-1 h-auto p-1 text-white hover:bg-green-700"
+                            >
+                              ×
+                            </Button>
                           </span>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <Label htmlFor="trigger-word">Trigger Words</Label>
-                      <div className="flex gap-2 mt-2">
+                      <Label>Trigger Words & Responses</Label>
+                      <div className="space-y-2 mt-2">
                         <Input
-                          id="trigger-word"
                           value={triggerWord}
                           onChange={(e) => setTriggerWord(e.target.value)}
-                          placeholder="Add a trigger word"
-                          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTriggerWord())}
+                          placeholder="Trigger word"
                           data-testid="input-trigger-word"
+                        />
+                        <Input
+                          value={customResponse}
+                          onChange={(e) => setCustomResponse(e.target.value)}
+                          placeholder="Response to trigger word"
+                          data-testid="input-trigger-response"
                         />
                         <Button 
                           type="button" 
-                          onClick={addTriggerWord}
+                          onClick={() => {
+                            if (triggerWord.trim() && customResponse.trim()) {
+                              const currentTriggers = form.getValues("customTriggerWords") || [];
+                              form.setValue("customTriggerWords", [...currentTriggers, { word: triggerWord.trim(), response: customResponse.trim() }]);
+                              setTriggerWord("");
+                              setCustomResponse("");
+                            }
+                          }}
                           variant="outline"
                           data-testid="button-add-trigger"
                         >
-                          Add
+                          Add Trigger
                         </Button>
                       </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {form.watch("customTriggerWords")?.map((word, index) => (
-                          <span key={index} className="bg-purple-600 text-white px-2 py-1 rounded text-sm">
-                            {word}
-                          </span>
+                      <div className="mt-2 space-y-1">
+                        {form.watch("customTriggerWords")?.map((trigger, index) => (
+                          <div key={index} className="bg-purple-600 text-white px-2 py-1 rounded text-sm flex justify-between items-center">
+                            <span>{typeof trigger === 'string' ? trigger : `${trigger.word} → ${trigger.response}`}</span>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                const currentTriggers = form.getValues("customTriggerWords") || [];
+                                form.setValue("customTriggerWords", currentTriggers.filter((_, i) => i !== index));
+                              }}
+                              className="ml-2 h-auto p-1 text-white hover:bg-purple-700"
+                            >
+                              ×
+                            </Button>
+                          </div>
                         ))}
                       </div>
                     </div>
