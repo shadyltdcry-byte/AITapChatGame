@@ -83,7 +83,7 @@ export default function Game() {
   const [showAIControls, setShowAIControls] = useState(false);
   const [showBoosterModal, setShowBoosterModal] = useState(false);
   const [heartTriggers, setHeartTriggers] = useState<Array<{ amount: number; x: number; y: number }>>([]);
-  
+
   // Local settings state
   const [localSettings, setLocalSettings] = useState({
     darkMode: true,

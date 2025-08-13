@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ChatMessage } from "@shared/schema";
+import type { User } from "@shared/schema";
 
 interface ChatModalProps {
   isOpen: boolean;
@@ -13,18 +14,26 @@ interface ChatModalProps {
   characterId: string;
   characterName: string;
   userId: string;
+  user?: User;
 }
 
-export default function ChatModal({ isOpen, onClose, characterId, characterName, userId }: ChatModalProps) {
+export default function ChatModal({ isOpen, onClose, characterId, characterName, userId, user }: ChatModalProps) {
   const [message, setMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Fetch messages
-  const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
+  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery<ChatMessage[]>({
     queryKey: ["/api/chat", userId, characterId],
-    enabled: isOpen && characterId !== "",
+    queryFn: async () => {
+      if (!characterId || !userId) return [];
+      const response = await apiRequest("GET", `/api/chat/${userId}/${characterId}`);
+      const data = await response.json();
+      console.log('Chat messages loaded:', data);
+      return data;
+    },
+    enabled: isOpen && characterId !== "" && userId !== "",
   });
 
   // Get character info for avatar
@@ -35,26 +44,49 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
 
   // Send message mutation
   const sendMutation = useMutation({
-    mutationFn: async (userMessage: string) => {
+    mutationFn: async (message: string) => {
+      if (!userId || !characterId) {
+        throw new Error('Missing user ID or character ID');
+      }
+
+      console.log('Sending message:', { 
+        userId, 
+        characterId, 
+        message,
+        timestamp: new Date().toISOString()
+      });
+
       const response = await apiRequest("POST", "/api/chat/send", {
         userId,
         characterId,
-        message: userMessage,
+        message,
+        timestamp: new Date().toISOString()
       });
-      return response.json();
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/chat", userId, characterId] });
+      // Invalidate and refetch messages
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/chat', userId, characterId] 
+      });
+
+      refetchMessages();
       setMessage("");
-      
+
       // Show typing indicator for AI response
       setIsTyping(true);
-      
+
       // Simulate AI response delay
       setTimeout(() => {
         setIsTyping(false);
         // Trigger another refresh to get AI response
         queryClient.invalidateQueries({ queryKey: ["/api/chat", userId, characterId] });
+        refetchMessages();
       }, 2000 + Math.random() * 2000); // 2-4 seconds
     },
     onError: (error: any) => {
@@ -73,7 +105,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || sendMutation.isPending) return;
+    if (!message.trim() || sendMutation.isPending || isTyping) return;
     sendMutation.mutate(message.trim());
   };
 
@@ -87,7 +119,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
       <DialogContent className="bg-gradient-to-br from-gray-800 to-gray-900 text-white border-none max-w-sm p-0 rounded-3xl overflow-hidden h-[600px] flex flex-col">
         <DialogTitle className="sr-only">Chat with {characterName}</DialogTitle>
         <DialogDescription className="sr-only">Interactive chat conversation with {characterName}</DialogDescription>
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-black/20 border-b border-white/10">
           <div className="flex items-center space-x-3">
@@ -106,7 +138,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
               <div className="text-xs text-green-400">Online</div>
             </div>
           </div>
-          
+
           <Button
             onClick={onClose}
             variant="ghost"
@@ -119,7 +151,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {isLoading ? (
+          {messagesLoading ? (
             <div className="text-center text-white/70">Loading messages...</div>
           ) : (
             <>
@@ -146,7 +178,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
                         />
                       )}
                     </div>
-                    
+
                     {/* Message */}
                     <div className={`max-w-[70%] ${msg.isFromUser ? 'text-right' : ''}`}>
                       <div 
@@ -166,7 +198,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
                   </div>
                 ))
               )}
-              
+
               {/* Typing Indicator */}
               {isTyping && (
                 <div className="flex items-start space-x-3">
@@ -212,7 +244,7 @@ export default function ChatModal({ isOpen, onClose, characterId, characterName,
               {sendMutation.isPending ? "..." : "Send"}
             </Button>
           </form>
-          
+
           {/* Quick Actions */}
           <div className="flex space-x-2 mt-3">
             <Button
