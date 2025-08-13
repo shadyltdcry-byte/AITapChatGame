@@ -71,7 +71,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
   const [currentMood, setCurrentMood] = useState("normal");
   const [typingIndicator, setTypingIndicator] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -98,7 +98,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
   const character = specificCharacter || selectedCharacter;
 
   // Fetch chat messages
-  const { data: messages = [], isLoading: messagesLoading } = useQuery({
+  const { data: messages = [], isLoading: messagesLoading, refetch: refetchMessages } = useQuery({
     queryKey: ['/api/chat', userId, character?.id],
     queryFn: async () => {
       if (!character?.id) return [];
@@ -123,16 +123,22 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
       });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/chat', userId, character?.id] });
+    onSuccess: (data) => {
       setNewMessage("");
-      
-      // Simulate typing delay for AI response
-      if (chatSettings.responseDelay && character) {
-        setTypingIndicator(true);
-        const delay = Math.random() * (character.responseTimeMax - character.responseTimeMin) + character.responseTimeMin;
-        setTimeout(() => setTypingIndicator(false), delay * 1000);
-      }
+      // Invalidate and refetch messages immediately
+      queryClient.invalidateQueries({ 
+        queryKey: ['/api/chat', userId, character?.id] 
+      });
+
+      // Force a refetch to get the latest messages
+      setTimeout(() => {
+        refetchMessages();
+      }, 500);
+
+      toast({
+        title: "Message sent!",
+        description: data.aiResponse?.message ? "AI responded!" : "Message delivered",
+      });
     },
     onError: (error: any) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -166,23 +172,23 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
     // Generate response based on mood and personality
     const currentMoodKey = getMoodBasedOnDistribution();
     const responses = getResponsesForMood(currentMoodKey);
-    
+
     return responses[Math.floor(Math.random() * responses.length)];
   };
 
   const getMoodBasedOnDistribution = (): string => {
     if (!character?.moodDistribution) return "normal";
-    
+
     const rand = Math.random() * 100;
     let cumulative = 0;
-    
+
     for (const [mood, percentage] of Object.entries(character.moodDistribution)) {
       cumulative += percentage;
       if (rand <= cumulative) {
         return mood;
       }
     }
-    
+
     return "normal";
   };
 
@@ -244,7 +250,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
   // Update current mood periodically
   useEffect(() => {
     if (!character?.moodDistribution) return;
-    
+
     const interval = setInterval(() => {
       if (chatSettings.moodAdaptation) {
         setCurrentMood(getMoodBasedOnDistribution());
@@ -348,7 +354,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
             </div>
           </div>
         </CardHeader>
-        
+
         <CardContent className="flex-1 flex flex-col p-0">
           {/* Messages */}
           <ScrollArea ref={scrollAreaRef} className="flex-1 px-4">
@@ -421,7 +427,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
                   </div>
                 ))
               )}
-              
+
               {/* Typing Indicator */}
               {typingIndicator && (
                 <div className="flex gap-3">
@@ -442,7 +448,7 @@ export function AIChat({ userId, selectedCharacterId }: AIChatProps) {
           </ScrollArea>
 
           <Separator />
-          
+
           {/* Message Input */}
           <div className="p-4">
             <div className="flex gap-2">

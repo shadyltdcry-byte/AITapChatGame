@@ -50,8 +50,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/public', express.static('./public'));
 
   // Telegram Bot configuration
-  const BOT_TOKEN = "7513981050:AAGcpSnd75FnPCzznJy_Vrqwe982f5nBTcY";
-  const BOT_NAME = "ClassikLoyalty_Bot";
+  const BOT_TOKEN = process.env.BOT_TOKEN || "7513981050:AAGcpSnd75FnPCzznJy_Vrqwe982f5nBTcY";
+  const BOT_NAME = process.env.BOT_NAME || "ClassikLoyalty_Bot";
 
   // Verify Telegram WebApp data
   function verifyTelegramWebAppData(initData: string): any {

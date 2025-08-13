@@ -30,11 +30,19 @@ import {
   Shield,
   Smartphone,
   Monitor,
-  RotateCcw
+  RotateCcw,
+  Target,
+  ListChecks,
+  ShoppingBag,
+  Brain,
+  Gem,
+  Eye,
+  Moon,
+  Sun,
+  VolumeX
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useGameState } from "@/hooks/use-game-state";
 import FloatingHearts from "@/components/FloatingHearts";
 import WheelModal from "@/components/WheelModal";
 import VIPModal from "@/components/VIPModal";
@@ -43,9 +51,12 @@ import BoostersModal from "@/components/BoostersModal";
 import UpgradeModal from "@/components/UpgradeModal";
 import ChatModal from "@/components/ChatModal";
 import CharacterDisplay from "@/components/CharacterDisplay";
-import GameHeader from "@/components/GameHeader";
 import LoadingScreen from "@/components/LoadingScreen";
 import TelegramAuth from "@/components/TelegramAuth";
+import AdminPanelFull from "@/components/AdminPanelFull";
+import MistralDebugger from "@/components/MistralDebugger";
+import InGameAIControls from "@/components/InGameAIControls";
+import type { User, Character, Upgrade, GameStats } from "@shared/schema";
 
 // Mock user ID for testing
 const MOCK_USER_ID = "default-player";
@@ -56,21 +67,75 @@ const isCurrentUserAdmin = (user: User | undefined) => {
 };
 
 export default function Game() {
+  // All state hooks first
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChatModal, setShowChatModal] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showWheelModal, setShowWheelModal] = useState(false);
   const [showAchievementsModal, setShowAchievementsModal] = useState(false);
   const [showVIPModal, setShowVIPModal] = useState(false);
   const [showCharacterCreation, setShowCharacterCreation] = useState(false);
   const [showDebugger, setShowDebugger] = useState(false);
+  const [showAIControls, setShowAIControls] = useState(false);
+  const [showBoosterModal, setShowBoosterModal] = useState(false);
   const [heartTriggers, setHeartTriggers] = useState<Array<{ amount: number; x: number; y: number }>>([]);
+  
+  // Local settings state
+  const [localSettings, setLocalSettings] = useState({
+    darkMode: true,
+    fontSize: 16,
+    soundEnabled: true,
+    musicEnabled: false,
+    autoSave: true,
+    nsfwEnabled: false
+  });
+
+  // Hooks
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Initialize user data - always call queries in the same order
+  const { data: user, isLoading: userLoading } = useQuery<User>({
+    queryKey: ["/api/user/init"],
+    queryFn: async () => {
+      const response = await apiRequest('POST', '/api/user/init');
+      return await response.json();
+    },
+    refetchInterval: 30000,
+    enabled: isAuthenticated,
+  });
+
+  // Fetch selected character
+  const { data: character, isLoading: characterLoading } = useQuery<Character>({
+    queryKey: ["/api/character/selected", MOCK_USER_ID],
+    enabled: !!user && isAuthenticated,
+  });
+
+  // Fetch user upgrades
+  const { data: upgrades } = useQuery<Upgrade[]>({
+    queryKey: ["/api/upgrades", MOCK_USER_ID],
+    enabled: !!user && isAuthenticated,
+  });
+
+  // Fetch user stats
+  const { data: stats } = useQuery<GameStats>({
+    queryKey: ["/api/stats", MOCK_USER_ID],
+    enabled: !!user && isAuthenticated,
+  });
+
+  // Fetch current settings and sync with user data
+  useQuery({
+    queryKey: ['/api/settings', MOCK_USER_ID],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/settings');
+      return await response.json();
+    },
+    enabled: !!user && isAuthenticated
+  });
 
   // Handle authentication success
   const handleAuthSuccess = (user: any) => {
@@ -94,53 +159,6 @@ export default function Game() {
     }
   }, [isAuthenticated, loadingProgress]);
 
-  // Show loading screen if not authenticated or still loading
-  if (!isAuthenticated) {
-    return <TelegramAuth onAuthSuccess={handleAuthSuccess} />;
-  }
-
-  if (loadingProgress < 100) {
-    return <LoadingScreen progress={loadingProgress} />;
-  }
-
-  // Initialize user data
-  const { data: user, isLoading: userLoading } = useQuery<User>({
-    queryKey: ["/api/user/init"],
-    queryFn: async () => {
-      const response = await apiRequest('POST', '/api/user/init');
-      return await response.json();
-    },
-    refetchInterval: 30000,
-  });
-
-  // Fetch selected character
-  const { data: character, isLoading: characterLoading } = useQuery<Character>({
-    queryKey: ["/api/character/selected", MOCK_USER_ID],
-    enabled: !!user,
-  });
-
-  // Fetch user upgrades
-  const { data: upgrades } = useQuery<Upgrade[]>({
-    queryKey: ["/api/upgrades", MOCK_USER_ID],
-    enabled: !!user,
-  });
-
-  // Fetch user stats
-  const { data: stats } = useQuery<GameStats>({
-    queryKey: ["/api/stats", MOCK_USER_ID],
-    enabled: !!user,
-  });
-
-  // Fetch current settings and sync with user data
-  useQuery({
-    queryKey: ['/api/settings', MOCK_USER_ID],
-    queryFn: async () => {
-      const response = await apiRequest('GET', '/api/settings');
-      return await response.json();
-    },
-    enabled: !!user
-  });
-
   // Update local settings when user data changes
   useEffect(() => {
     if (user) {
@@ -150,6 +168,24 @@ export default function Game() {
       }));
     }
   }, [user]);
+
+  // Energy regeneration effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["/api/user/init"] });
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
+  // Early returns after all hooks
+  if (!isAuthenticated) {
+    return <TelegramAuth onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  if (loadingProgress < 100) {
+    return <LoadingScreen progress={loadingProgress} />;
+  }
 
   // Save settings mutation
   const saveSettingsMutation = useMutation({
@@ -236,15 +272,6 @@ export default function Game() {
   const handleSaveSettings = () => {
     saveSettingsMutation.mutate(localSettings);
   };
-
-  // Energy regeneration effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user/init"] });
-    }, 60000);
-
-    return () => clearInterval(interval);
-  }, []);
 
   if (userLoading || characterLoading) {
     return (
@@ -371,11 +398,11 @@ export default function Game() {
           </Button>
 
           <Button
-            onClick={() => setShowUpgradeModal(true)}
-            className="w-16 h-20 rounded-xl bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white shadow-lg flex flex-col items-center justify-center"
+            onClick={() => setShowBoosterModal(true)}
+            className="w-16 h-20 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg flex flex-col items-center justify-center"
           >
-            <Star className="w-6 h-6" />
-            <span className="text-xs mt-1">Power Up</span>
+            <Zap className="w-6 h-6" />
+            <span className="text-xs mt-1">Booster</span>
           </Button>
 
           {/* AI Control Panel Button */}
@@ -602,9 +629,16 @@ export default function Game() {
       </Dialog>
 
       {/* Modals */}
-      <BoostersModal 
+      <UpgradeModal 
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+        upgrades={upgrades || []}
+        user={user}
+      />
+
+      <BoostersModal 
+        isOpen={showBoosterModal}
+        onClose={() => setShowBoosterModal(false)}
         user={user}
       />
 
