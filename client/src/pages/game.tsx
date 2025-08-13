@@ -68,7 +68,7 @@ const isCurrentUserAdmin = (user: User | undefined) => {
 
 export default function Game() {
   // All state hooks first - ALWAYS maintain the same order
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true); // Set to true by default
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [currentUser, setCurrentUser] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
@@ -94,11 +94,11 @@ export default function Game() {
     nsfwEnabled: false
   });
 
-  // Hooks - ALWAYS call these regardless of authentication state
+  // Hooks - ALWAYS call these in the exact same order every render
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Initialize user data - always call queries in the same order
+  // ALL queries - called unconditionally to maintain hook order
   const { data: user, isLoading: userLoading } = useQuery<User>({
     queryKey: ["/api/user/init"],
     queryFn: async () => {
@@ -106,35 +106,31 @@ export default function Game() {
       return await response.json();
     },
     refetchInterval: 30000,
-    enabled: isAuthenticated,
+    enabled: true, // Always enabled
   });
 
-  // Fetch selected character
   const { data: character, isLoading: characterLoading } = useQuery<Character>({
     queryKey: ["/api/character/selected", MOCK_USER_ID],
-    enabled: !!user && isAuthenticated,
+    enabled: true, // Always enabled
   });
 
-  // Fetch user upgrades
   const { data: upgrades } = useQuery<Upgrade[]>({
     queryKey: ["/api/upgrades", MOCK_USER_ID],
-    enabled: !!user && isAuthenticated,
+    enabled: true, // Always enabled
   });
 
-  // Fetch user stats
   const { data: stats } = useQuery<GameStats>({
     queryKey: ["/api/stats", MOCK_USER_ID],
-    enabled: !!user && isAuthenticated,
+    enabled: true, // Always enabled
   });
 
-  // Fetch current settings and sync with user data
-  useQuery({
+  const { data: settings } = useQuery({
     queryKey: ['/api/settings', MOCK_USER_ID],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/settings');
       return await response.json();
     },
-    enabled: !!user && isAuthenticated
+    enabled: true // Always enabled
   });
 
   // ALL useEffect hooks - keep same order
@@ -173,25 +169,7 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [queryClient]);
 
-  // Handle authentication success
-  const handleAuthSuccess = (user: any) => {
-    setCurrentUser(user);
-    setIsAuthenticated(true);
-  };
-
-  // Set authenticated by default for now (remove Telegram pre-auth)
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setIsAuthenticated(true);
-    }
-  }, [isAuthenticated]);
-
-  // Early returns after all hooks - make sure loading completes first
-  if (loadingProgress < 100) {
-    return <LoadingScreen progress={loadingProgress} />;
-  }
-
-  // Save settings mutation
+  // Save settings mutation - MUST be called before any conditional returns
   const saveSettingsMutation = useMutation({
     mutationFn: async (newSettings: typeof localSettings) => {
       // Update user NSFW setting
@@ -218,7 +196,7 @@ export default function Game() {
     },
   });
 
-  // Tap mutation
+  // Tap mutation - MUST be called before any conditional returns
   const tapMutation = useMutation({
     mutationFn: async (coords?: { x: number; y: number }) => {
       const response = await apiRequest("POST", "/api/tap", { userId: user?.id || MOCK_USER_ID });
@@ -257,7 +235,13 @@ export default function Game() {
     },
   });
 
-  // Handle tap with floating hearts
+  // Handle authentication success
+  const handleAuthSuccess = (user: any) => {
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  };
+
+  // Helper functions
   const handleTap = (event: React.MouseEvent) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = event.clientX;
@@ -276,6 +260,11 @@ export default function Game() {
   const handleSaveSettings = () => {
     saveSettingsMutation.mutate(localSettings);
   };
+
+  // Early returns after all hooks are defined
+  if (loadingProgress < 100) {
+    return <LoadingScreen progress={loadingProgress} />;
+  }
 
   if (userLoading || characterLoading) {
     return (
