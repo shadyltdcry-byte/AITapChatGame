@@ -1,9 +1,14 @@
-
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -34,20 +39,20 @@ export default function MistralDebugger({ isOpen, onClose }: MistralDebuggerProp
       toast({ title: "Debug assistance received!" });
     },
     onError: (error: any) => {
-      toast({ 
-        title: "Debug failed", 
-        description: error.message, 
-        variant: "destructive" 
+      toast({
+        title: "Debug failed",
+        description: error.message,
+        variant: "destructive",
       });
-    }
+    },
   });
 
   const handleDebug = () => {
     if (!code.trim() || !error.trim()) {
-      toast({ 
-        title: "Missing information", 
+      toast({
+        title: "Missing information",
         description: "Please provide both code and error details",
-        variant: "destructive" 
+        variant: "destructive",
       });
       return;
     }
@@ -69,7 +74,7 @@ export default function MistralDebugger({ isOpen, onClose }: MistralDebuggerProp
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-indigo-900 text-white border-0">
+      <DialogContent className="max-w-4xl max-h-[90vh] bg-gradient-to-br from-slate-900 to-indigo-900 text-white border-0 flex flex-col">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold flex items-center gap-2">
             <Sparkles className="w-6 h-6 text-purple-400" />
@@ -80,17 +85,17 @@ export default function MistralDebugger({ isOpen, onClose }: MistralDebuggerProp
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-grow overflow-hidden">
           {/* Input Section */}
-          <div className="space-y-4">
-            <Card className="bg-slate-800/40 border-slate-600/30">
+          <div className="flex flex-col space-y-4 overflow-hidden">
+            <Card className="bg-slate-800/40 border-slate-600/30 flex flex-col max-h-full">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Code className="w-5 h-5" />
                   Code & Error Details
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="flex-grow overflow-y-auto space-y-4">
                 <div>
                   <Label className="text-slate-300">Problematic Code</Label>
                   <Textarea
@@ -139,8 +144,8 @@ export default function MistralDebugger({ isOpen, onClose }: MistralDebuggerProp
           </div>
 
           {/* Results Section */}
-          <div className="space-y-4">
-            <Card className="bg-slate-800/40 border-slate-600/30 h-full">
+          <div className="flex flex-col space-y-4 overflow-hidden h-full">
+            <Card className="bg-slate-800/40 border-slate-600/30 flex flex-col max-h-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-white flex items-center gap-2">
@@ -159,18 +164,16 @@ export default function MistralDebugger({ isOpen, onClose }: MistralDebuggerProp
                   )}
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-grow overflow-y-auto">
                 {debugMutation.isPending ? (
                   <div className="flex items-center justify-center h-40">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400"></div>
                     <span className="ml-3 text-slate-300">Analyzing your code...</span>
                   </div>
                 ) : assistance ? (
-                  <ScrollArea className="h-96">
+                  <ScrollArea className="h-full max-h-full">
                     <div className="space-y-4">
-                      <Badge className="bg-green-600/80 border-green-500/50">
-                        Analysis Complete
-                      </Badge>
+                      <Badge className="bg-green-600/80 border-green-500/50">Analysis Complete</Badge>
                       <div className="whitespace-pre-wrap text-slate-200 bg-slate-900/40 p-4 rounded-lg border border-slate-600/30">
                         {assistance}
                       </div>

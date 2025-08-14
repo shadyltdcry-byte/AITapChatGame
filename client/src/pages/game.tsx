@@ -49,14 +49,15 @@ import VIPModal from "@/components/VIPModal";
 import AchievementsModal from "@/components/AchievementsModal";
 import BoostersModal from "@/components/BoostersModal";
 import UpgradeModal from "@/components/UpgradeModal";
-import ChatModal from "@/components/ChatModal";
 import CharacterDisplay from "@/components/CharacterDisplay";
+import EnhancedChatModal from "@/components/EnhancedChatModal";
 import LoadingScreen from "@/components/LoadingScreen";
 import TelegramAuth from "@/components/TelegramAuth";
 import AdminPanelFull from "@/components/AdminPanelFull";
 import MistralDebugger from "@/components/MistralDebugger";
 import InGameAIControls from "@/components/InGameAIControls";
 import type { User, Character, Upgrade, GameStats } from "@shared/schema";
+import CharacterGallery from "./CharacterGallery";
 
 // Mock user ID for testing
 const MOCK_USER_ID = "default-player";
@@ -132,6 +133,8 @@ export default function Game() {
     },
     enabled: true // Always enabled
   });
+
+  const [showGallery, setShowGallery] = useState(false);
 
   // ALL useEffect hooks - keep same order
   // Simulate loading progress
@@ -290,75 +293,132 @@ export default function Game() {
       {/* Main Game Interface */}
       <div className="relative z-10 min-h-screen">
         {/* Top Status Bar */}
-        <div className="flex justify-between items-start p-4">
-          {/* Top-Left Block */}
-          <div className="flex items-center space-x-3">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-xl overflow-hidden border-2 border-red-500 bg-red-500/20">
-                <img 
-                  src={character.imageUrl} 
-                  alt="Character Avatar"
-                  className="w-full h-full object-cover"
-                />
-                <Button
-                  onClick={() => setShowSettingsModal(true)}
-                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-gray-800 hover:bg-gray-700 p-0"
-                >
-                  <Settings className="w-3 h-3" />
-                </Button>
-              </div>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center space-x-4">
-                <span className="text-white font-bold">{user.username || "Guest"}</span>
-                <span className="text-white font-bold">Level: {user.level}/50</span>
-              </div>
-              <div className="flex items-center space-x-1 mt-1">
-                <Heart className="w-4 h-4 text-red-400" />
-                <span className="text-white">LP {stats?.totalPoints?.toLocaleString() || "1500"}</span>
-              </div>
-            </div>
-          </div>
+        <div className="bg-black/30 backdrop-blur-sm border border-white/20 rounded-xl m-4 p-4">
+          <div className="flex justify-between items-start">
 
-          {/* Top-Right Block */}
-          <div className="text-center relative">
-            <div className="text-white">
-              <div className="text-sm font-bold">LP per Hour:</div>
-              <div className="text-lg font-bold text-green-400">+{user?.hourlyRate?.toLocaleString() || "0"}</div>
+            {/* Top-Left Block */}
+            <div className="flex flex-col items-start w-25">
+              {/* Name */}
+              <span className="text-white font-bold mb-2 text-center truncate max-w-[10rem]">
+                {user.username || "Guest"}
+              </span>
+
+              <div className="flex items-center">
+                {/* Avatar - Clickable to open gallery */}
+                <div 
+                  className="relative w-[80px] h-[80px] rounded-xl overflow-hidden border-2 border-red-500 bg-red-500/20 cursor-pointer hover:border-red-400 hover:shadow-lg transition-all duration-200 group"
+                  onClick={() => {
+                    console.log('Avatar clicked!');
+                    console.log('showGallery state:', showGallery);
+                    setShowGallery(true);
+                    console.log('showGallery after setState:', true);
+                  }}
+                  title="Click to open character gallery"
+                >
+                  {/* User Avatar - Priority: user avatar > character avatar > initials */}
+                  {(user?.avatarUrl || character?.avatarUrl) ? (
+                    <img 
+                      src={
+                        user?.avatarUrl 
+                          ? (user.avatarUrl.startsWith('/') ? user.avatarUrl : `/uploads/${user.avatarUrl}`)
+                          : (character?.avatarUrl?.startsWith('/') ? character.avatarUrl : `/uploads/${character.avatarUrl}`)
+                      }
+                      alt="User Avatar"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                      onError={(e) => {
+                        // Fallback to initials if avatar fails to load
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+
+                  {/* Fallback to user initials */}
+                  <div 
+                    className="w-full h-full flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-500 text-white font-bold text-2xl transition-transform group-hover:scale-105"
+                    style={{ display: (user?.avatarUrl || character?.avatarUrl) ? 'none' : 'flex' }}
+                  >
+                    {(user.username || "Guest").charAt(0).toUpperCase()}
+                  </div>
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white text-xs font-bold bg-black/70 px-2 py-1 rounded">
+                      Gallery
+                    </div>
+                  </div>
+
+                  {/* Settings button - moved to bottom right */}
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent gallery from opening
+                      setShowSettingsModal(true);
+                    }}
+                    className="absolute -bottom-0 -right-0 w-6 h-6 rounded-full bg-gray-800 hover:bg-gray-700 p-0 z-10"
+                  >
+                    <Settings className="w-3 h-3" />
+                  </Button>
+                </div>
+
+                {/* Level & LP */}
+                <div className="flex flex-col justify-center ml-4">
+                  <div className="text-sm font-bold">
+                    <span className="text-gray-300">Level: </span>
+                    <span className="ml-1 font-bold text-green-400 text-sm">{user.level}</span>
+                  </div>
+                  <div className="mt-1 text-sm rounded-lg overflow-hidden border-2 border-red-500 bg-red-600/20 to-red-700/30 px-3 py-1">
+                    <span className="text-gray-250 font-bold">❤️Lust Points: </span>
+                    <span className="ml-2 font-bold text-pink-200">{stats?.totalPoints?.toLocaleString() || "100"}</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center justify-end space-x-4 mt-2">
+        
+
+            {/* Center Block (LP/Hr with heart) */}
+            <div className="flex flex-col items-center justify-center">
+              <div className="bg-gradient-to-r from-green-700/40 to-green-500/40 border border-green-400/30 rounded-lg px-4 py-2 text-center}">
+                <span className="text-gray-300 font-bold">❤️ LP per Hour</span>
+                <div className="font-bold text-pink-400 text-LG">
+                  +{user?.hourlyRate?.toLocaleString() || "100"}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Block (Stats + Icons) */}
+            <div className="flex flex-col items-end">
+              {/* Lust Gems */}
               <div className="flex items-center space-x-1">
                 <Gem className="w-4 h-4 text-green-400" />
-                <span className="text-white text-sm">Lust Gems: </span>
-                <span className="text-white font-bold">{user?.lustGems || "0"}</span>
+                <span className="text-white text-sm">{user?.lustGems || "50"}</span>
               </div>
-            </div>
-            <div className="flex items-center justify-end space-x-1 mt-1">
-              <Zap className="w-4 h-4 text-yellow-400" />
-              <span className="text-white text-sm">Energy: </span>
-              <span className="text-white font-bold">{stats?.currentEnergy || "1500"}/{stats?.maxEnergy || "4500"}</span>
-            </div>
 
-            {/* Admin Buttons - Only visible to admin users */}
-            {isCurrentUserAdmin(user) && (
-              <div className="absolute -top-2 -right-2 flex gap-1">
-
-                <Button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center justify-center p-0"
-                  title="Admin Panel"
-                >
-                  <Shield className="w-4 h-4" />
-                </Button>
-                <Button
-                  onClick={() => setShowDebugger(true)}
-                  className="w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg flex items-center justify-center p-0"
-                  title="AI Debugger"
-                >
-                  <Brain className="w-4 h-4" />
-                </Button>
+              {/* Energy */}
+              <div className="flex items-center space-x-1 mt-1">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                <span className="text-white text-sm">{stats?.currentEnergy || "1000"}/{stats?.maxEnergy || "4500"}</span>
               </div>
-            )}
+
+              {/* Admin + Debugger Icons */}
+              {isCurrentUserAdmin(user) && (
+                <div className="flex gap-1 mt-2">
+                  <Button
+                    onClick={() => setShowAdminPanel(true)}
+                    className="w-8 h-8 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg flex items-center justify-center p-0"
+                    title="Admin Panel"
+                  >
+                    <Shield className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    onClick={() => setShowDebugger(true)}
+                    className="w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-lg flex items-center justify-center p-0"
+                    title="AI Debugger"
+                  >
+                    <Brain className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -370,14 +430,16 @@ export default function Game() {
         </div>
 
         {/* Main Character Display */}
-        <div className="flex-1 relative px-4">
-          <CharacterDisplay 
-            character={character}
-            user={user}
-            stats={stats}
-            onTap={handleTap}
-            isTapping={tapMutation.isPending}
-          />
+        <div className="flex-1 relative flex items-center justify-center px-4">
+          <div className="relative w-full max-w-lg h-[60vh] md:h-[70vh] lg:h-[80vh]">
+            <CharacterDisplay 
+              character={character}
+              user={user}
+              stats={stats}
+              onTap={handleTap}
+              isTapping={tapMutation.isPending}
+            />
+          </div>
         </div>
 
         {/* Right-Side Action Buttons */}
@@ -410,41 +472,39 @@ export default function Game() {
         </div>
 
         {/* Bottom Navigation */}
-          <div className="fixed bottom-0 left-0 right-0 bg-black/30 backdrop-blur-sm border-t border-white/10 p-4 pb-6">
-            <div className="flex justify-around items-center max-w-md mx-auto">
-              <Button
-                onClick={() => setShowUpgradeModal(true)}
-                className="flex flex-col items-center space-y-1 bg-transparent hover:bg-white/10 text-white p-3 rounded-lg"
-              >
-                <ArrowUp className="w-6 h-6 text-pink-400" />
-                <span className="text-xs">Upgrade</span>
-              </Button>
+        <div className="fixed bottom-0 left-0 right-0 bg-black/30 backdrop-blur-sm border-t border-white/10 p-4 pb-6">
+          <div className="flex justify-around items-center max-w-md mx-auto">
+            <Button
+              onClick={() => setShowUpgradeModal(true)}
+              className="flex flex-col items-center space-y-1 relative w-16 h-16 rounded-xl overflow-hidden border-2 border-gray-500 bg-gray-500/20 hover:bg-white/10 text-white p-3 rounded-lg"
+            >
+              <ArrowUp className="w-6 h-6 text-gray-400" />
+              <span className="text-xs">Upgrade</span>
+            </Button>
 
-              <Button
-                onClick={() => setShowAchievementsModal(true)}
-                className="flex flex-col items-center space-y-1 bg-transparent hover:bg-white/10 text-white p-3 rounded-lg"
-              >
-                <ListChecks className="w-6 h-6 text-blue-400" />
-                <span className="text-xs">Task</span>
-              </Button>
+            <Button
+              onClick={() => setShowAchievementsModal(true)}
+              className="flex flex-col items-center space-y-1 relative w-16 h-16 rounded-xl overflow-hidden border-2 border-blue-500 bg-blue-500/20 hover:bg-white/10 text-white p-3 rounded-lg"
+            >
+              <ListChecks className="w-6 h-6 text-blue-400" />
+              <span className="text-xs">Task</span>
+            </Button>
 
-              <Button
-                onClick={() => toast({ title: "Shop", description: "Coming soon!" })}
-                className="flex flex-col items-center space-y-1 bg-transparent hover:bg-white/10 text-white p-3 rounded-lg"
-              >
-                <ShoppingBag className="w-6 h-6 text-green-400" />
-                <span className="text-xs">Shop</span>
-              </Button>
+            <Button
+              onClick={() => toast({ title: "Shop", description: "Coming soon!" })}
+              className="flex flex-col items-center space-y-1 relative w-16 h-16 rounded-xl overflow-hidden border-2 border-green-500 bg-green-500/20 hover:bg-white/10 text-white p-3 rounded-lg">
+              <ShoppingBag className="w-6 h-6 text-green-400" />
+              <span className="text-xs">Shop</span>
+            </Button>
 
-              <Button
-                onClick={() => setShowChatModal(true)}
-                className="flex flex-col items-center space-y-1 bg-transparent hover:bg-white/10 text-white p-3 rounded-lg"
-              >
-                <MessageCircle className="w-6 h-6 text-purple-400" />
-                <span className="text-xs">Chat</span>
-              </Button>
-            </div>
+            <Button
+              onClick={() => setShowChatModal(true)}
+              className="flex flex-col items-center space-y-1 relative w-16 h-16 rounded-xl overflow-hidden border-2 border-purple-500 bg-purple-500/20 hover:bg-white/10 text-white p-3 rounded-lg">
+              <MessageCircle className="w-6 h-6 text-purple-400" />
+              <span className="text-xs">Chat</span>
+            </Button>
           </div>
+        </div>
       </div>
 
       {/* Settings Modal */}
@@ -629,19 +689,20 @@ export default function Game() {
         user={user}
       />
 
-      <BoostersModal 
-        isOpen={showBoosterModal}
-        onClose={() => setShowBoosterModal(false)}
-        user={user}
-      />
-
-      <ChatModal
+      <EnhancedChatModal
         isOpen={showChatModal}
         onClose={() => setShowChatModal(false)}
         characterId={character?.id || ""}
         characterName={character?.name || "Character"}
         user={user}
       />
+
+      <BoostersModal 
+        isOpen={showBoosterModal}
+        onClose={() => setShowBoosterModal(false)}
+        user={user}
+      />
+
 
       <AdminPanelFull
         isOpen={showAdminPanel}

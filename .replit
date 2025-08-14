@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "nix"]
+modules = ["nix", "nodejs-20", "python-3.11", "web"]
 run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
@@ -117,3 +117,12 @@ args = "npm run dev"
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[rules]
+
+[rules.formatter]
+
+[rules.formatter.fileExtensions]
+
+[rules.formatter.fileExtensions.".tsx"]
+id = "module:web/languageServer:typescript-language-server"

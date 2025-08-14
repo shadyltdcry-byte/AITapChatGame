@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   lastName: text("last_name"),
   level: integer("level").notNull().default(1),
   points: integer("points").notNull().default(0),
+  avatarUrl: text("avatarUrl").default(""),
   energy: integer("energy").notNull().default(4500),
   maxEnergy: integer("maxEnergy").notNull().default(4500),
   hourlyRate: integer("hourlyRate").notNull().default(0),
@@ -228,3 +229,4 @@ export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type InsertUserVip = z.infer<typeof insertUserVipSchema>;
 export type InsertGameSettings = z.infer<typeof insertGameSettingsSchema>;
 export type InsertGameStats = z.infer<typeof insertGameStatsSchema>;
+

@@ -84,8 +84,7 @@ export default function EnhancedChatModal({ isOpen, onClose, characterId, charac
     if (chatHistory && chatHistory.length > 0) {
       const formattedMessages = chatHistory.map((msg: any) => ({
         id: msg.id,
-        content: msg.message || msg.content,  // Try both message and content fields
-        sender: msg.isFromUser ? 'user' : 'character',  // Use isFromUser field
+        content: msg.message || msg.content,  // Try both message and content fieldsandomM   sender: msg.isFromUser ? 'user' : 'character',  // Use isFromUser field
         timestamp: new Date(msg.createdAt),
         type: msg.type || 'text',
         mood: msg.mood,
@@ -171,8 +170,8 @@ export default function EnhancedChatModal({ isOpen, onClose, characterId, charac
 
   const handleLocalMessage = () => {
     const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      content: currentMessage,
+      id: Date.now().toString(), 
+      content: customMessage,
       sender: 'user',
       timestamp: new Date(),
       type: 'text',
@@ -190,7 +189,7 @@ export default function EnhancedChatModal({ isOpen, onClose, characterId, charac
         sender: 'character',
         timestamp: new Date(),
         type: 'text',
-        mood: getRandomMood(),
+        mood: getandomMMood(),
         reactionScore: Math.floor(Math.random() * 10) + 1,
       };
 
@@ -220,7 +219,7 @@ export default function EnhancedChatModal({ isOpen, onClose, characterId, charac
       return `I'm doing amazing now that I'm talking to you! *giggles* You always know how to brighten my mood! 😄`;
     }
 
-    // Questions about character
+    // Question about character
     if (input.includes('tell me about') || input.includes('what do you like')) {
       return `Oh, I love so many things! I enjoy cozy conversations like this, stargazing, and discovering new things about people I care about... like you! What about you? What makes you happy? 🌟`;
     }
@@ -309,15 +308,13 @@ export default function EnhancedChatModal({ isOpen, onClose, characterId, charac
                 </Badge>
               </div>
               <div className="text-sm text-gray-300 font-normal">
-                Online • Loves to chat
+                Online • 
               </div>
             </div>
           </DialogTitle>
           <DialogDescription className="text-white/70">
-              Have conversations with your favorite character.
-            </DialogDescription>
-        </DialogHeader>
-
+              Chat now to start personalizing your relationship with {characterName}</DialogDescription>
+      </DialogHeader>
         <div className="flex-1 p-6 pt-0">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3 bg-gray-800/50">
@@ -385,7 +382,7 @@ export default function EnhancedChatModal({ isOpen, onClose, characterId, charac
                             <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                             <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                           </div>
-                          <span className="text-xs text-gray-400 ml-2">typing...</span>
+                          <span className="text-xs text-gray-400 ml-2">{characterName} is typing...</span>
                         </div>
                       </div>
                     </div>
